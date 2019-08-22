@@ -3,11 +3,12 @@ class Node:
     """
 
     def __init__(self, value, level, algorithm):
-        # 同一个value可能有多个，这个时候需要在node里添加id作为唯一标识
+        # 与这个Node有关的内容不止一个，将它们的唯一标识都添加到ids
         self.ids = set()
 
         # 当前Node节点存储的取值信息
         self.value = value
+        # 用于存储节点在图中的相对某个节点的深度
         self.level = level
 
         # 算法名称，hits 或者 pagerank
@@ -15,17 +16,25 @@ class Node:
         self.page_rank = 0
         self.page_rank_new = 0
 
-        # 有向图的之前的节点和之后的节点
-        self.successors = set()
-        self.predecessors = set()
-
         # 下面用于hits算法
         self.hub_weight = 1
         self.authority_weight = 1
         self.hub_weight_for_calculation = 1
         self.authority_weight_for_calculation = 1
+        # 用于计算hub_weight时，临时存储中间值
         self.unnormarized_hub_weight = 1
         self.unnormarized_authority_weight = 1
+
+    @property
+    def score(self):
+        """获取当前节点的score
+        """
+        if self.algorithm == 'hits':
+            return self.authority_weight
+        elif self.algorithm == 'pagerank':
+            return self.page_rank
+        else:
+            return 0
 
     @property
     def cmp_value(self):
@@ -44,7 +53,10 @@ class Node:
     def __eq__(self, node):
         """重载==，判断依据Node的value是否相等
         """
-        if self.value == node.value:
-            return True
+        if isinstance(node, Node):
+            if self.value == node.value:
+                return True
+            else:
+                return False
         else:
             return False

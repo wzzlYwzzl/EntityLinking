@@ -4,7 +4,7 @@ import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from entitylinking.index.triple_index_creator import triple_index_create
+from entitylinking.index_lucene.triple_index_creator import triple_index_create
 
 
 def create_test_data_file(test_data, start_index, count):
