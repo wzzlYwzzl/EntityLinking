@@ -19,7 +19,7 @@ def insert_neighbors(graph, triple_index, max_depth, algorithm):
     while not node_queue.empty():
         node = node_queue.get()
         level = node.level
-        if level > max_depth:
+        if level >= max_depth:
             continue
         else:
             neighbor_triples = get_direct_neighbors(
@@ -37,5 +37,5 @@ def get_direct_neighbors(triple_index, node, max_depth):
     获取neighbors三元组的方法就是index查询。
     """
     subject = node.value
-    triples = triple_index.search(subject=subject, and_or='and')
+    triples = triple_index.search(subject=subject, mode='and')
     return triples

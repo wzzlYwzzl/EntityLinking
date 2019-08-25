@@ -15,6 +15,7 @@ from ..utils.file_utils import get_files
 report_period = 10000
 # 基于jieba的analyzer
 analyzer = ChineseAnalyzer()
+analyzer_subject = ChineseAnalyzer(cut_all=False)
 
 
 def triple_index_create(data, index_dir):
@@ -47,7 +48,7 @@ def _create_triple_index(storage, data):
 def _create_jieba_schema():
     """创建Schema，这里使用的是jieba分词器
     """
-    schema = Schema(subject=TEXT(stored=True, analyzer=analyzer),
+    schema = Schema(subject=TEXT(stored=True, analyzer=analyzer_subject),
                     predicate=TEXT(stored=True, analyzer=analyzer),
                     object=TEXT(stored=True, analyzer=analyzer))
     return schema

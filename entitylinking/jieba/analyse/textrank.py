@@ -57,7 +57,7 @@ class UndirectWeightedGraph:
 class TextRank(KeywordExtractor):
 
     def __init__(self):
-        self.tokenizer = self.postokenizer = jieba.posseg.dt
+        self.tokenizer = self.postokenizer = entitylinking.jieba.posseg.dt
         self.stop_words = self.STOP_WORDS.copy()
         self.pos_filt = frozenset(('ns', 'n', 'vn', 'v'))
         self.span = 5

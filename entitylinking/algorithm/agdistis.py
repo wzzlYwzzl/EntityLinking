@@ -10,6 +10,7 @@ from ..graph.neighbor_builder import insert_neighbors
 from ..graph.hits import hits_analyze
 from ..graph.pagerank import pagerank_analyze
 from ..index_whoosh.triple_index import TripleIndex
+import entitylinking.jieba as jieba
 
 
 class Agdistis:
@@ -21,7 +22,9 @@ class Agdistis:
         # 候选实体所在图谱的关系节点的深度
         self._max_depth = int(AppConfig.instance().max_depth)
         self._algorithm = AppConfig.instance().algorithm
-        self._triple_index = TripleIndex(AppConfig.instance().index_dir)
+        TripleIndex.init_instance(AppConfig.instance().index_dir)
+        self._triple_index = TripleIndex.instance()
+        jieba.load_userdict(AppConfig.instance().user_dic)
 
     def run(self, doc):
         """算法的入口函数
@@ -36,39 +39,47 @@ class Agdistis:
         graph = nx.DiGraph()
 
         # 按照mention的长度从大到小排序
-        mentions = sorted(doc.mention_list,
-                          key=lambda iterm: iterm.length, reverse=True)
-        # 根据mentions添加候选实体到graph中
-        self.add_candidates2graph(graph, mentions)
-        # 将候选实体在图谱中的相邻关系节点也插入到graph中
-        insert_neighbors(graph, self._triple_index, self._max_depth, self._algorithm)
+        doc.mention_list = sorted(doc.mention_list,
+                                  key=lambda iterm: iterm.length, reverse=True)
+        CandidateUtils.instance().add_candidates(doc)
 
-        options = { 'node_color': 'black', 'node_size': 20, 'width': 3}
-        nx.draw_random(graph, **options)
-        plt.savefig('test.png')
-        #plt.show()
+        if len(doc.mention_list) <= 1:
+            # 如果只有一个mention，不需要后面的算法
+            return doc
+
+        # 根据mentions添加候选实体到graph中
+        self.add_candidates2graph(graph, doc)
+
+        # 将候选实体在图谱中的相邻关系节点也插入到graph中
+        insert_neighbors(graph, self._triple_index,
+                         self._max_depth, self._algorithm)
+
+        #options = {'node_color': 'black', 'node_size': 20, 'width': 1}
+        #nx.draw_random(graph, **options)
+        #plt.savefig('test.png')
+        # plt.show()
 
         # 使用链接算法更新节点权重
         if self._algorithm == 'hits':
-            hits_analyze(graph, iter=20)
+            hits_analyze(graph, iter=2)
         elif self._algorithm == 'pagerank':
             pagerank_analyze(graph, max_iter=50, threshhold=0.1)
 
-        self.add_candidates2mentions(graph, mentions)
+        self.node2candidates(graph, doc)
 
-        return mentions
+        return doc
 
-    def add_candidates2graph(self, graph, mentions):
+    def add_candidates2graph(self, graph, doc):
         """将mentions的所有候选项都作为Node添加到graph中。
         """
         algorithm = AppConfig.instance().algorithm
 
         node_map = {}
-        for mention in mentions:
-            candidates = CandidateUtils.instance().get_condidates(mention)
+        for mention in doc.mention_list:
+            candidates = mention.candidates
             for candidate in candidates:
                 if candidate.entity in node_map:
-                    node = node_map(candidate.entity)
+                    node = node_map[candidate.entity]
                     # 这里ids存放的是mention本身
                     node.ids.add(mention)
                 else:
@@ -80,10 +91,14 @@ class Agdistis:
         for node in node_map.values():
             graph.add_node(node)
 
-    def add_candidates2mentions(self, graph, mentions):
+    def node2candidates(self, graph, doc):
         """将graph中的candidates添加到对应的mention中。
         """
         nodes = graph.nodes
+        for node in nodes:
+            for mention in node.ids:
+                mention.candidates = []  # 先清空原来的候选项
+
         # 将node根据得分从大到小排序
         nodes = sorted(nodes, key=lambda node: node.cmp_value, reverse=True)
         for node in nodes:

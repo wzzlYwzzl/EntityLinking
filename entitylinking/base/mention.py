@@ -1,3 +1,10 @@
+import entitylinking.jieba as jieba
+
+stop_words = {
+    '的', '是', '了', '和'
+}
+
+
 class Mention:
     """用户输入文本中，指向图谱实体的词
     """
@@ -18,14 +25,30 @@ class Mention:
         # word的结束位置
         self.end_pos = start_pos + length
 
+        # mention的上下文字符串，也就是用户输入问句中
+        # 与mention词相连的上下文信息
+        self.context = []
+
         # 当前的Mention所有的候选项
         self.candidates = []
+
+    def context_str(self, join_str=''):
+        """获取字符拼接的context
+
+        Arguments:
+            join_str {str} -- 用于拼接的字符串
+        """
+        tmp = join_str.join(self.context).strip()
+        words = jieba.cut(tmp)
+        out_words = [word for word in words if word not in stop_words]
+        return join_str.join(out_words)
 
     def link_result(self):
         """与当前mention匹配得分最高的candidate
         """
         ret = None
         if len(self.candidates) > 0:
+            self.candidates.sort(key=lambda item: item.score, reversed=True)
             ret = self.candidates[0]
         return ret
 

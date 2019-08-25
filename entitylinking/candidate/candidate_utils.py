@@ -3,6 +3,7 @@ import threading
 
 from ..config.app_config import AppConfig
 from ..candidate.candidate import Candidate
+from .search_score_filter import SearchScoreFilter
 
 
 class CandidateUtils:
@@ -23,23 +24,37 @@ class CandidateUtils:
     def __init__(self):
         self._m2e_file = AppConfig.instance().m2e
         self._m2e_dic = {}
+        self.filters = []
         self.load_m2e()
+        self.add_filters()
 
-    def get_condidates(self, mention):
+    def add_candidates(self, doc):
+        """为doc添加候选实体
+        """
+        for mention in doc.mention_list:
+            candidates = self.get_candidates(doc, mention)
+            mention.candidates = candidates
+
+    def get_candidates(self, doc, mention):
         """根据mention获取候选实体
 
         Arguments:
+            doc {Document} -- mention所在的Document
             mention {Mention} -- 表示一个mention的class
 
         Returns:
             list<Candidate> -- 候选项列表，如果没有就返回空list
         """
         if mention.word in self._m2e_dic:
-            return self._m2e_dic[mention.word]
+            candidates = self._m2e_dic[mention.word]
         else:
             # 这里暂时只从m2e的配置文件中获取，后面可以考虑通过搜索等其他
             # 手段处理。
-            return []
+            candidates = []
+        for f in self.filters:
+            candidates = f.filter(doc, mention, candidates)
+
+        return candidates
 
     def load_m2e(self):
         """加载mention与候选实体的对应关系文件。
@@ -63,3 +78,9 @@ class CandidateUtils:
                         entity_list = []
                         entity_list.append(Candidate(entity))
                         self._m2e_dic[mention] = entity_list
+
+    def add_filters(self):
+        """添加过滤器，后面考虑可配置化的过滤器
+        """
+        search_filter = SearchScoreFilter()
+        self.filters.append(search_filter)

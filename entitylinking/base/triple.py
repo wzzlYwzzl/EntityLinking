@@ -1,3 +1,5 @@
+import re
+
 class Triple:
     """表示一个三元组SPO
     """
@@ -5,7 +7,10 @@ class Triple:
     def __init__(self, subject, predicate, object):
         self._subject = subject
         self._predicate = predicate
-        self._object = object
+        if object != None:
+            self._object = re.sub(r'<a>|</a>', '', object)
+        else:
+            self._object = ""
 
     @property
     def subject(self):
@@ -29,4 +34,4 @@ class Triple:
 
     @object.setter
     def object(self, value):
-        self._object = object
+        self._object = value

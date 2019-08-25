@@ -20,7 +20,10 @@ if os.name == 'nt':
 else:
     _replace_file = os.rename
 
-_get_abs_path = lambda path: os.path.normpath(os.path.join(os.getcwd(), path))
+
+def _get_abs_path(path): return os.path.normpath(
+    os.path.join(os.getcwd(), path))
+
 
 DEFAULT_DICT = None
 DEFAULT_DICT_NAME = "dict.txt"
@@ -48,9 +51,11 @@ re_skip_default = re.compile("(\r\n|\s)", re.U)
 re_han_cut_all = re.compile("([\u4E00-\u9FD5]+)", re.U)
 re_skip_cut_all = re.compile("[^a-zA-Z0-9+#\n]", re.U)
 
+
 def setLogLevel(log_level):
     global logger
     default_logger.setLevel(log_level)
+
 
 class Tokenizer(object):
 
@@ -111,7 +116,8 @@ class Tokenizer(object):
             if self.initialized:
                 return
 
-            default_logger.debug("Building prefix dict from %s ..." % (abs_path or 'the default dictionary'))
+            default_logger.debug("Building prefix dict from %s ..." % (
+                abs_path or 'the default dictionary'))
             t1 = time.time()
             if self.cache_file:
                 cache_file = self.cache_file
@@ -129,7 +135,7 @@ class Tokenizer(object):
 
             load_from_cache_fail = True
             if os.path.isfile(cache_file) and (abs_path == DEFAULT_DICT or
-                os.path.getmtime(cache_file) > os.path.getmtime(abs_path)):
+                                               os.path.getmtime(cache_file) > os.path.getmtime(abs_path)):
                 default_logger.debug(
                     "Loading model from cache %s" % cache_file)
                 try:
@@ -143,7 +149,8 @@ class Tokenizer(object):
                 wlock = DICT_WRITING.get(abs_path, threading.RLock())
                 DICT_WRITING[abs_path] = wlock
                 with wlock:
-                    self.FREQ, self.total = self.gen_pfdict(self.get_dict_file())
+                    self.FREQ, self.total = self.gen_pfdict(
+                        self.get_dict_file())
                     default_logger.debug(
                         "Dumping model to file cache %s" % cache_file)
                     try:
@@ -205,7 +212,7 @@ class Tokenizer(object):
                 old_j = L[0]
             else:
                 for j in L:
-                    if j > k:
+                    if j >= k:  # 这里没有等号导致不会返回单字的词
                         yield sentence[k:j + 1]
                         old_j = j
 
@@ -285,8 +292,10 @@ class Tokenizer(object):
         sentence = strdecode(sentence)
 
         if cut_all:
-            re_han = re_han_cut_all
-            re_skip = re_skip_cut_all
+            #re_han = re_han_cut_all
+            re_han = re_han_default
+            #re_skip = re_skip_cut_all
+            re_skip = re_skip_default
         else:
             re_han = re_han_default
             re_skip = re_skip_default
@@ -318,7 +327,7 @@ class Tokenizer(object):
         """
         Finer segmentation for search engines.
         """
-        words = self.cut(sentence, HMM=HMM)
+        words = self.cut(sentence, cut_all=True, HMM=HMM)
         for w in words:
             if len(w) > 2:
                 for i in xrange(len(w) - 1):
@@ -383,7 +392,8 @@ class Tokenizer(object):
                 try:
                     line = line.decode('utf-8').lstrip('\ufeff')
                 except UnicodeDecodeError:
-                    raise ValueError('dictionary file %s must be utf-8' % f_name)
+                    raise ValueError(
+                        'dictionary file %s must be utf-8' % f_name)
             if not line:
                 continue
             # match won't be None because there's at least one character
@@ -403,7 +413,8 @@ class Tokenizer(object):
         """
         self.check_initialized()
         word = strdecode(word)
-        freq = int(freq) if freq is not None else self.suggest_freq(word, False)
+        freq = int(freq) if freq is not None else self.suggest_freq(
+            word, False)
         self.FREQ[word] = freq
         self.total += freq
         if tag:
@@ -452,7 +463,7 @@ class Tokenizer(object):
             self.add_word(word, freq)
         return freq
 
-    def tokenize(self, unicode_sentence, mode="default", HMM=True):
+    def tokenize(self, unicode_sentence, cut_all=True, mode="default", HMM=True):
         """
         Tokenize a sentence and yields tuples of (word, start, end)
 
@@ -470,7 +481,7 @@ class Tokenizer(object):
                 yield (w, start, start + width)
                 start += width
         else:
-            for w in self.cut(unicode_sentence, HMM=HMM):
+            for w in self.cut(unicode_sentence, cut_all=cut_all, HMM=HMM):
                 width = len(w)
                 if len(w) > 2:
                     for i in xrange(len(w) - 1):
@@ -500,7 +511,10 @@ dt = Tokenizer()
 
 # global functions
 
-get_FREQ = lambda k, d=None: dt.FREQ.get(k, d)
+
+def get_FREQ(k, d=None): return dt.FREQ.get(k, d)
+
+
 add_word = dt.add_word
 calc = dt.calc
 cut = dt.cut
