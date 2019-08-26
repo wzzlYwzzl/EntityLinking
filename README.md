@@ -13,31 +13,19 @@
 3. 修改了tokenize方法对于mode=search时的分词
 4. 修改了cut中cut_all的bug
 
+## 关于whoosh的说明
+
+之所以将whoosh的代码添加到当前项目，是为了解决这里越界的问题。
+
+修改了whoosh\column.py中201行和202行的代码。
+
 ```python
-import whoosh.index as index
-import whoosh.qparser as qparser
-from whoosh.qparser import QueryParser
-
-import sys
-sys.path.append('/Users/caoxiaojie/pythonCode/EntityLinking')
-
-index_dir = '/Users/caoxiaojie/pythonCode/EntityLinking/data/index_all'
-ix = index.open_dir(index_dir, indexname='triple')
-s = ix.searcher()
-qp = QueryParser('subject',schema=ix.schema,group=qparser.OrGroup)
-qp2 = QueryParser('subject',schema=ix.schema)
-
-q = qp.parse(u'subject:(李娜) AND object:(唱歌的)')
-
-results = s.search(q, limit=20)
-
-for r in results:
-    print(r['subject'])
-
+# 把原来的allow_longs=False改成了allow_longs=True
+self._lengths = GrowableArray(allow_longs=True)
+self._offsets = GrowableArray(allow_longs=True)
 ```
 
-## 出现的错误
-
+```text
 ...
 完成34690000行，耗时18036.621724200002
 完成34700000行，耗时18043.1189176
@@ -78,3 +66,27 @@ Traceback (most recent call last):
   File "D:\anaconda\lib\site-packages\whoosh\util\numlists.py", line 48, in _retype
     raise OverflowError("%r is too big to fit in an array" % maxnum)
 OverflowError: 4294967357 is too big to fit in an array
+```
+
+```python
+import whoosh.index as index
+import whoosh.qparser as qparser
+from whoosh.qparser import QueryParser
+
+import sys
+sys.path.append('/Users/caoxiaojie/pythonCode/EntityLinking')
+
+index_dir = '/Users/caoxiaojie/pythonCode/EntityLinking/data/index_all'
+ix = index.open_dir(index_dir, indexname='triple')
+s = ix.searcher()
+qp = QueryParser('subject',schema=ix.schema,group=qparser.OrGroup)
+qp2 = QueryParser('subject',schema=ix.schema)
+
+q = qp.parse(u'subject:(李娜) AND object:(唱歌的)')
+
+results = s.search(q, limit=20)
+
+for r in results:
+    print(r['subject'])
+
+```

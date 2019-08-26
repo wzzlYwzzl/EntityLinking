@@ -2,9 +2,9 @@ import os
 import datetime
 import timeit
 
-from whoosh.index import create_in
-from whoosh.fields import *
-from whoosh.filedb.filestore import FileStorage
+from entitylinking.whoosh.index import create_in
+from entitylinking.whoosh.fields import *
+from entitylinking.whoosh.filedb.filestore import FileStorage
 
 from entitylinking.jieba.analyse import ChineseAnalyzer
 
@@ -37,7 +37,7 @@ def _create_triple_index(storage, data):
     """
     schema = _create_jieba_schema()
     if storage.index_exists(indexname='triple'):
-        ix = storage.open_index()
+        ix = storage.open_index(indexname='triple')
     else:
         ix = storage.create_index(schema, indexname='triple')
     writer = ix.writer()
