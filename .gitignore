@@ -7,7 +7,7 @@ data/index*
 #############
 
 *.py[co]
-**/__pycache__
+__pycache__
 
 # Packages
 *.egg
