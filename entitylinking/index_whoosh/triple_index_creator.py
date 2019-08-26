@@ -2,13 +2,14 @@ import os
 import datetime
 import timeit
 
-from entitylinking.whoosh.index import create_in
-from entitylinking.whoosh.fields import *
-from entitylinking.whoosh.filedb.filestore import FileStorage
+from whoosh.index import create_in
+from whoosh.fields import *
+from whoosh.filedb.filestore import FileStorage
 
 from entitylinking.jieba.analyse import ChineseAnalyzer
 
 from ..utils.file_utils import get_files
+from ..log.log_manager import LogManager
 
 
 # 打印日志的间隔，默认是一百万
@@ -83,7 +84,7 @@ def _write_document(writer, data_dir):
                     )
                 if count > 0 and count % report_period == 0:
                     end = timeit.default_timer()
-                    print("完成{}行，耗时{}".format(count, end-start))
+                    LogManager.instance().info("完成{}行，耗时{}".format(count, end-start))
     end = timeit.default_timer()
-    print("完成{}行，耗时{}秒".format(count, end-start))
-    print("完成索引创建")
+    LogManager.instance().info("完成{}行，耗时{}秒".format(count, end-start))
+    LogManager.instance().info("完成索引创建")

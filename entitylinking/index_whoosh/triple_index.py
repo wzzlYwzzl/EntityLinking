@@ -1,8 +1,8 @@
 import threading
 
-import entitylinking.whoosh.index as index
-import entitylinking.whoosh.qparser as qparser
-from entitylinking.whoosh.qparser import QueryParser
+import whoosh.index as index
+import whoosh.qparser as qparser
+from whoosh.qparser import QueryParser
 
 
 from ..config.app_config import AppConfig
