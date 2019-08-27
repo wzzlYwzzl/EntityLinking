@@ -1,10 +1,3 @@
-import entitylinking.jieba as jieba
-
-stop_words = {
-    '的', '是', '了', '和', '地', '得'
-}
-
-
 class Mention:
     """用户输入文本中，指向图谱实体的词
     """
@@ -38,10 +31,7 @@ class Mention:
         Arguments:
             join_str {str} -- 用于拼接的字符串
         """
-        tmp = join_str.join(self.context).strip()
-        words = jieba.cut(tmp)
-        out_words = [word for word in words if word not in stop_words]
-        return join_str.join(out_words)
+        return join_str.join(self.context)
 
     def link_result(self):
         """与当前mention匹配得分最高的candidate

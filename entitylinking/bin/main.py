@@ -1,10 +1,9 @@
 import sys
-
 sys.path.append('/Users/caoxiaojie/pythonCode/EntityLinking')
 
-from entitylinking.config.app_config import AppConfig
-from entitylinking.algorithm.agdistis import Agdistis
 from entitylinking.base.document import Document
+from entitylinking.algorithm.agdistis import Agdistis
+from entitylinking.config.app_config import AppConfig
 
 config_file = '/Users/caoxiaojie/pythonCode/EntityLinking/data/config.ini'
 
@@ -33,6 +32,7 @@ if __name__ == '__main__':
     print('======================================')
     '''
 
-    doc = Document('唱歌的<entity>李娜</entity>是谁')
+    #doc = Document('唱歌的<entity>李娜</entity>是谁')
+    doc = Document('<entity>李白</entity>这首歌是在唱唐朝的<entity>李白</entity>吗？')
     ret_doc = agdistis.run(doc)
     print_doc(ret_doc)
