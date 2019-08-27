@@ -67,3 +67,9 @@ class Document:
 
             if i == length - 1:
                 mention_cur.context.append(self.text[mention_cur.end_pos:])
+
+    def sort_candidates(self):
+        """对candiate进行排序，根据score从大到小排序
+        """
+        for mention in self.mention_list:
+            mention.sort_candidates()

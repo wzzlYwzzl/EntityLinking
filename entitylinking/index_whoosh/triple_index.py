@@ -7,6 +7,7 @@ from whoosh.qparser import QueryParser
 
 from ..config.app_config import AppConfig
 from ..base.triple import Triple
+from ..candidate.candidate import Candidate
 
 
 class TripleIndex:
@@ -58,10 +59,10 @@ class TripleIndex:
         query_list = []
 
         if subject != None:
-            query_list.append("subject:({}),".format(subject))
+            query_list.append("subject:({})".format(subject))
 
         if predicate != None:
-            query_list.append("predicate:({}),".format(predicate))
+            query_list.append("predicate:({})".format(predicate))
 
         if object != None:
             query_list.append("object:({})".format(object))
@@ -79,7 +80,7 @@ class TripleIndex:
         return q
 
     def search_triples(self, q, max_result_count):
-        """
+        """搜索结果使用三元组来表示
         """
         results = self._searcher.search(q, limit=max_result_count)
 
@@ -92,3 +93,18 @@ class TripleIndex:
             triples.append(triple)
 
         return triples
+
+    def search_candidates(self, subject=None, predicate=None, object=None, mode='or', max_result_count=50):
+        """搜索结果用candidate来表示，这里包含搜索的得分
+        """
+        q = self.build_query(subject, predicate, object, mode)
+        results = self._searcher.search(q, limit=max_result_count)
+
+        candidates = []
+        for result in results:
+            subject = result['subject']
+            score = result.score
+            candidate = Candidate(subject, score)
+            candidates.append(candidate)
+
+        return candidates

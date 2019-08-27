@@ -2,7 +2,7 @@ class Node:
     """图的一个节点
     """
 
-    def __init__(self, value, level, algorithm):
+    def __init__(self, value, level, algorithm, base_score=0):
         # 与这个Node有关的内容不止一个，将它们的唯一标识都添加到ids
         self.ids = set()
 
@@ -25,14 +25,17 @@ class Node:
         self.unnormarized_hub_weight = 1
         self.unnormarized_authority_weight = 1
 
+        # 当前node的有其他逻辑确定的初始得分
+        self.base_score = base_score
+
     @property
     def score(self):
         """获取当前节点的score
         """
         if self.algorithm == 'hits':
-            return self.authority_weight
+            return self.authority_weight + self.base_score
         elif self.algorithm == 'pagerank':
-            return self.page_rank
+            return self.page_rank + self.base_score
         else:
             return 0
 
@@ -41,9 +44,9 @@ class Node:
         """获取排序时使用的值
         """
         if self.algorithm == 'hits':
-            return self.authority_weight
+            return self.authority_weight + self.base_score
         elif self.algorithm == 'pagerank':
-            return self.page_rank
+            return self.page_rank + self.base_score
         else:
             return 0
 

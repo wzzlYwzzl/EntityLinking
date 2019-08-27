@@ -45,6 +45,7 @@ class Agdistis:
 
         if len(doc.mention_list) <= 1:
             # 如果只有一个mention，不需要后面的算法
+            doc.sort_candidates()
             return doc
 
         # 根据mentions添加候选实体到graph中
@@ -84,7 +85,7 @@ class Agdistis:
                     node.ids.add(mention)
                 else:
                     node = Node(
-                        candidate.entity, 0, algorithm)
+                        candidate.entity, 0, algorithm, base_score=candidate.score)
                     node.ids.add(mention)
                     node_map[candidate.entity] = node
 
@@ -102,9 +103,10 @@ class Agdistis:
         # 将node根据得分从大到小排序
         nodes = sorted(nodes, key=lambda node: node.cmp_value, reverse=True)
         for node in nodes:
-            candidate = self.node2candidate(node)
-            for mention in node.ids:
-                mention.candidates.append(candidate)
+            if len(node.ids) > 0:
+                candidate = self.node2candidate(node)
+                for mention in node.ids:
+                    mention.candidates.append(candidate)
 
     def node2candidate(self, node):
         """将graph的node转换为candidate
@@ -115,5 +117,5 @@ class Agdistis:
         Returns:
             Candidate -- 候选项
         """
-        candidate = Candidate(node.value, node.score)
+        candidate = Candidate(node.value, node.score + node.base_score)
         return candidate

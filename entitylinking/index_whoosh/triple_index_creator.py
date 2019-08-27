@@ -1,6 +1,7 @@
 import os
 import datetime
 import timeit
+import logging
 
 from whoosh.index import create_in
 from whoosh.fields import *
@@ -9,7 +10,6 @@ from whoosh.filedb.filestore import FileStorage
 from entitylinking.jieba.analyse import ChineseAnalyzer
 
 from ..utils.file_utils import get_files
-from ..log.log_manager import LogManager
 
 
 # 打印日志的间隔，默认是一百万
@@ -50,8 +50,8 @@ def _create_jieba_schema():
     """创建Schema，这里使用的是jieba分词器
     """
     schema = Schema(subject=TEXT(stored=True, analyzer=analyzer_subject),
-                    predicate=TEXT(stored=True, analyzer=analyzer),
-                    object=TEXT(stored=True, analyzer=analyzer))
+                    predicate=TEXT(stored=False, analyzer=analyzer),
+                    object=TEXT(stored=False, analyzer=analyzer))
     return schema
 
 
@@ -84,7 +84,7 @@ def _write_document(writer, data_dir):
                     )
                 if count > 0 and count % report_period == 0:
                     end = timeit.default_timer()
-                    LogManager.instance().info("完成{}行，耗时{}".format(count, end-start))
+                    logging.info("完成{}行，耗时{}".format(count, end-start))
     end = timeit.default_timer()
-    LogManager.instance().info("完成{}行，耗时{}秒".format(count, end-start))
-    LogManager.instance().info("完成索引创建")
+    logging.info("完成{}行，耗时{}秒".format(count, end-start))
+    logging.info("完成索引创建")

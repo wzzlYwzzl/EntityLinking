@@ -1,7 +1,7 @@
 import entitylinking.jieba as jieba
 
 stop_words = {
-    '的', '是', '了', '和'
+    '的', '是', '了', '和', '地', '得'
 }
 
 
@@ -48,9 +48,14 @@ class Mention:
         """
         ret = None
         if len(self.candidates) > 0:
-            self.candidates.sort(key=lambda item: item.score, reversed=True)
+            self.candidates.sort(key=lambda item: item.score, reverse=True)
             ret = self.candidates[0]
         return ret
+
+    def sort_candidates(self):
+        """对候选项进行排序
+        """
+        self.candidates.sort(key=lambda item: item.score, reverse=True)
 
     def __hash__(self):
         return hash(self.word + str(self.start_pos))

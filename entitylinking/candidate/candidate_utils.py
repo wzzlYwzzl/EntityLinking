@@ -4,6 +4,7 @@ import threading
 from ..config.app_config import AppConfig
 from ..candidate.candidate import Candidate
 from .search_score_filter import SearchScoreFilter
+from ..log.log_manager import LogManager
 
 
 class CandidateUtils:
@@ -64,7 +65,7 @@ class CandidateUtils:
         """
         m2e_file = self._m2e_file
         if not os.path.exists(m2e_file):
-            return
+            LogManager.instance().error("m2e文件不存在")
         with open(m2e_file, mode='r', encoding='utf8') as f:
             for line in f:
                 fields = line.strip().split('\t')
