@@ -59,7 +59,7 @@ def setLogLevel(log_level):
 
 class Tokenizer(object):
 
-    def __init__(self, dictionary=DEFAULT_DICT):
+    def __init__(self, dictionary=DEFAULT_DICT, split=' '):
         self.lock = threading.RLock()
         if dictionary == DEFAULT_DICT:
             self.dictionary = dictionary
@@ -71,6 +71,7 @@ class Tokenizer(object):
         self.initialized = False
         self.tmp_dir = None
         self.cache_file = None
+        self.split = split # dictionary使用的列分隔符
 
     def __repr__(self):
         return '<Tokenizer dictionary=%r>' % self.dictionary
@@ -82,7 +83,7 @@ class Tokenizer(object):
         for lineno, line in enumerate(f, 1):
             try:
                 line = line.strip().decode('utf-8')
-                word, freq = line.split(' ')[:2]
+                word, freq = line.split(self.split)[:2]
                 freq = int(freq)
                 lfreq[word] = freq
                 ltotal += freq
