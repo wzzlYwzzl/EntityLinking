@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+from cacheout import Cache
 
 from ..config.app_config import AppConfig
 from ..base.document import Document
@@ -26,6 +27,9 @@ class Agdistis:
         self._triple_index = TripleIndex.instance()
         jieba.load_userdict(AppConfig.instance().user_dic)
 
+        # 缓存
+        self._cache = Cache(maxsize=10*1024, ttl=10*60)
+
     def run(self, doc):
         """算法的入口函数
 
@@ -35,6 +39,10 @@ class Agdistis:
         Returns:
             list<Mention> -- doc中包含的mention，mention中存储有实体链接的结果信息
         """
+        cache_doc = self._cache.get(doc.text)
+        if cache_doc:
+            return cache_doc
+
         # 创建有向图
         graph = nx.DiGraph()
 
@@ -45,6 +53,7 @@ class Agdistis:
 
         if len(doc.mention_list) <= 1:
             # 如果只有一个mention，不需要后面的算法
+            self._cache.add(doc.text, doc)
             doc.sort_candidates()
             return doc
 
@@ -57,7 +66,7 @@ class Agdistis:
 
         #options = {'node_color': 'black', 'node_size': 20, 'width': 1}
         #nx.draw_random(graph, **options)
-        #plt.savefig('test.png')
+        # plt.savefig('test.png')
         # plt.show()
 
         # 使用链接算法更新节点权重
@@ -68,6 +77,7 @@ class Agdistis:
 
         self.node2candidates(graph, doc)
 
+        self._cache.add(doc.text, doc)
         return doc
 
     def add_candidates2graph(self, graph, doc):

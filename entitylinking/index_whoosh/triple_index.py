@@ -3,6 +3,7 @@ import threading
 import whoosh.index as index
 import whoosh.qparser as qparser
 from whoosh.qparser import QueryParser
+from cacheout import LRUCache
 
 
 from ..config.app_config import AppConfig
@@ -35,13 +36,18 @@ class TripleIndex:
         # 索引
         self._ix = index.open_dir(index_dir, indexname='triple')
         self._searcher = self._ix.searcher()
+
         # 用于返回具有相似度的结果
         self._query_parser_or = QueryParser(
             'subject', self._ix.schema, group=qparser.OrGroup)
         # 用于获取精准匹配的结果
         self._query_parser_and = QueryParser('subject', self._ix.schema)
 
-    def search(self, subject=None, predicate=None, object=None, mode='or', max_result_count=50):
+        # 搜索缓存
+        self._triple_cache = LRUCache(maxsize=10 * 1024 * 1024, ttl=10 * 60)
+        self._candidate_cache = LRUCache(maxsize=10 * 1024 * 1024, ttl=10 * 60)
+
+    def search(self, subject=None, predicate=None, object=None, mode='or', max_result_count=20):
         """对三元组索引执行查询。
 
         Arguments:
@@ -50,25 +56,34 @@ class TripleIndex:
         Returns
             list<Triple> -- 三元组Triple的list
         """
-        q = self.build_query(subject, predicate, object, mode)
-        return self.search_triples(q, max_result_count)
+        key = self._get_cache_key(
+            subject, predicate, object, mode, max_result_count)
+        results = self._triple_cache.get(key)
+        if not results:
+            q = self.build_query(subject, predicate, object, mode)
+            results = self.search_triples(q, max_result_count)
+            self._triple_cache.add(key, results)
+
+        return results
 
     def build_query(self, subject=None, predicate=None, object=None, mode='or'):
         """构建关于三元组的查询语句
         """
         query_list = []
 
-        if subject != None:
+        if subject:
             query_list.append("subject:({})".format(subject))
 
-        if predicate != None:
+        if predicate:
             query_list.append("predicate:({})".format(predicate))
 
-        if object != None:
+        if object:
             query_list.append("object:({})".format(object))
 
         if mode == 'filter':
             query_str = " AND ".join(query_list)
+            if object:
+                query_str += " OR subject:({})".format(object)
         else:
             query_str = ",".join(query_list)
 
@@ -94,17 +109,40 @@ class TripleIndex:
 
         return triples
 
-    def search_candidates(self, subject=None, predicate=None, object=None, mode='or', max_result_count=50):
+    def search_candidates(self, subject=None, predicate=None, object=None, mode='or', max_result_count=20):
         """搜索结果用candidate来表示，这里包含搜索的得分
         """
-        q = self.build_query(subject, predicate, object, mode)
-        results = self._searcher.search(q, limit=max_result_count)
+        key = self._get_cache_key(
+            subject, predicate, object, mode, max_result_count)
+        
+        results = self._candidate_cache.get(key)
+        if not results:
+            q = self.build_query(subject, predicate, object, mode)
+            se_results = self._searcher.search(q, limit=max_result_count)
 
-        candidates = []
-        for result in results:
-            subject = result['subject']
-            score = result.score
-            candidate = Candidate(subject, score)
-            candidates.append(candidate)
+            results = []
+            for result in se_results:
+                subject = result['subject']
+                score = result.score
+                candidate = Candidate(subject, score)
+                results.append(candidate)
+            self._candidate_cache.add(key, results)
 
-        return candidates
+        return results
+
+    def _get_cache_key(self, subject=None, predicate=None, object=None, mode='or', max_result_count=20):
+        """获取缓存数据时使用的key
+        """
+        key = ""
+        if subject:
+            key += 'sub:{}'.format(subject)
+
+        if object:
+            key += 'obj:{}'.format(object)
+
+        if predicate:
+            key += 'pre:{}'.format(predicate)
+
+        key += 'mode:{},count:{}'.format(mode, max_result_count)
+
+        return key

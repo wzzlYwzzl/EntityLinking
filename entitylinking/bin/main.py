@@ -35,4 +35,5 @@ if __name__ == '__main__':
     doc = Document('唱歌的李娜是谁', False)
     #doc = Document('<entity>李白</entity>这首歌是在唱唐朝的<entity>李白</entity>吗？')
     ret_doc = agdistis.run(doc)
+    ret_doc = agdistis.run(doc)
     print_doc(ret_doc)

@@ -24,7 +24,7 @@ with open(m2e_file, mode='r', encoding='utf-8') as f_read:
             if len(fields) == 2:
                 word = fields[0].strip()
                 word = re.sub(re_rm, '', word)
-                if word != pre_word:
+                if word and len(word) > 1 and word != pre_word:
                     pre_word = word
                     f_write.write('{}\t{}\t{}\n'.format(
                         word, default_freq, default_POS))
