@@ -14,6 +14,10 @@ def test_add_mention_context():
     doc = Document(origin_text)
     print(" ".join(doc.mention_list[0].context))
     print(" ".join(doc.mention_list[1].context))
+    
+    doc = Document('<entity>李白</entity>这首歌是在唱唐朝的<entity>李白</entity>吗？')
+    print(" ".join(doc.mention_list[0].context))
+    print(" ".join(doc.mention_list[1].context))
 
 
 test_add_mention_context()

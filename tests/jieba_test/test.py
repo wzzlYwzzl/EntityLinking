@@ -1,7 +1,10 @@
 #encoding=utf-8
+from __future__ import print_function
 import sys
-sys.path.append("../")
-import jieba
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+import entitylinking.jieba as jieba
 
 
 def cuttest(test_sent):
