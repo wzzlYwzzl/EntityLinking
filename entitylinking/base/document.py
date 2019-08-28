@@ -1,5 +1,8 @@
 from ..base.mention import Mention
+from ..ner.dict_ner import DictNER
 import entitylinking.jieba as jieba
+
+
 
 stop_words = {
     '的', '是', '了', '和', '地', '得', '在', '这', '吗', '呢', '啊'
@@ -12,16 +15,20 @@ class Document:
     其中包含了要链接的mention。
     """
 
-    def __init__(self, origin_text):
+    def __init__(self, origin_text, has_entity_tag=True):
         # 原始文本
         self.origin_text = origin_text
         # text中的mentions
         self.mention_list = []
 
-        # 除去<entity>和</entity>标签的文本
-        self.text = origin_text.replace(
-            '<entity>', '').replace('</entity>', '')
-        self.text2doc()
+        if has_entity_tag:
+            # 除去<entity>和</entity>标签的文本
+            self.text = origin_text.replace(
+                '<entity>', '').replace('</entity>', '')
+            self.text2doc()
+        else:
+            self.text = origin_text
+            self.mention_list = DictNER.instance().get_mentions(self.text)
         self.add_mention_context()
 
     def text2doc(self):

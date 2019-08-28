@@ -71,7 +71,7 @@ class Tokenizer(object):
         self.initialized = False
         self.tmp_dir = None
         self.cache_file = None
-        self.split = split # dictionary使用的列分隔符
+        self.split = split  # dictionary使用的列分隔符
 
     def __repr__(self):
         return '<Tokenizer dictionary=%r>' % self.dictionary
@@ -203,6 +203,29 @@ class Tokenizer(object):
                 tmplist.append(k)
             DAG[k] = tmplist
         return DAG
+
+    def cut_from_dict(self, sentence):
+        """基于最长匹配，从sentence中获取词典中存在的词
+        """
+        self.check_initialized()
+        DAG = {}
+        N = len(sentence)
+        for k in xrange(N):
+            tmplist = []
+            i = k
+            frag = sentence[k]
+            while i < N and frag in self.FREQ:
+                if self.FREQ[frag]:  # 表示词典中有这个词
+                    tmplist.append(i)
+                i += 1
+                frag = sentence[k:i+1]
+            if tmplist:
+                DAG[k] = tmplist
+        for i in range(N):
+            if i in DAG:
+                end_offset = DAG[i][-1]
+                word = sentence[i:end_offset + 1]
+                yield (word, i, end_offset + 1)
 
     def __cut_all(self, sentence):
         dag = self.get_DAG(sentence)

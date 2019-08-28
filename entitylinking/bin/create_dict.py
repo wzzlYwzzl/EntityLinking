@@ -14,7 +14,7 @@ default_freq = '10'
 default_POS = 'n'
 
 # 除去句子中哪些字符
-re_rm = re.compile('([\"\(\)]+)')
+re_rm = '[\"\(\)]+'
 
 with open(m2e_file, mode='r', encoding='utf-8') as f_read:
     with open(dict_file, mode='w+', encoding='utf-8') as f_write:
@@ -23,6 +23,7 @@ with open(m2e_file, mode='r', encoding='utf-8') as f_read:
             fields = line.split('\t')
             if len(fields) == 2:
                 word = fields[0].strip()
+                word = re.sub(re_rm, '', word)
                 if word != pre_word:
                     pre_word = word
                     f_write.write('{}\t{}\t{}\n'.format(
