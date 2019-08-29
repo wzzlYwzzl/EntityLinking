@@ -98,7 +98,7 @@ class TripleIndex:
             query_str += "subject:({})".format(subject)
 
         if object:
-            query_str += " AND (object:({}) OR subject:({}))".format(object, object)
+            query_str += " AND (object:({}) OR subject_cutall:({}))".format(object, object)
 
         q = self._query_parser_or.parse(query_str)
 
