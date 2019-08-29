@@ -12,6 +12,10 @@ from entitylinking.jieba.analyse import ChineseAnalyzer
 
 from ..utils.file_utils import get_files
 
+log_console = logging.StreamHandler(sys.stderr)
+default_logger = logging.getLogger(__name__)
+default_logger.setLevel(logging.DEBUG)
+default_logger.addHandler(log_console)
 
 # 打印日志的间隔，默认是一百万
 report_period = 10000
@@ -52,6 +56,7 @@ def _create_jieba_schema():
     """创建Schema，这里使用的是jieba分词器
     """
     schema = Schema(subject=TEXT(stored=True, analyzer=analyzer_subject),
+                    subject_cutall=TEXT(stored=False, analyzer=analyzer),
                     predicate=TEXT(stored=True, analyzer=analyzer),
                     object=TEXT(stored=True, analyzer=analyzer))
     return schema
@@ -72,12 +77,13 @@ def _write_document(writer, data_dir):
                     count += 1
                     writer.add_document(
                         subject=fields[0].strip(),
+                        subject_cutall=fields[0].strip(),
                         predicate=fields[1].strip(),
                         object=fields[2].strip()
                     )
                 if count > 0 and count % report_period == 0:
                     end = timeit.default_timer()
-                    logging.info("完成{}行，耗时{}".format(count, end-start))
+                    default_logger.info("完成{}行，耗时{}".format(count, end-start))
     end = timeit.default_timer()
-    logging.info("完成{}行，耗时{}秒".format(count, end-start))
-    logging.info("完成索引创建")
+    default_logger.info("完成{}行，耗时{}秒".format(count, end-start))
+    default_logger.info("完成索引创建")
