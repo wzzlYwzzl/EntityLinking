@@ -60,13 +60,13 @@ class TripleIndex:
             subject, predicate, object, mode, max_result_count)
         results = self._triple_cache.get(key)
         if not results:
-            q = self.build_query(subject, predicate, object, mode)
+            q = self.build_search_query(subject, predicate, object, mode)
             results = self.search_triples(q, max_result_count)
             self._triple_cache.add(key, results)
 
         return results
 
-    def build_query(self, subject=None, predicate=None, object=None, mode='or'):
+    def build_search_query(self, subject=None, predicate=None, object=None, mode='or'):
         """构建关于三元组的查询语句
         """
         query_list = []
@@ -80,17 +80,27 @@ class TripleIndex:
         if object:
             query_list.append("object:({})".format(object))
 
-        if mode == 'filter':
-            query_str = " AND ".join(query_list)
-            if object:
-                query_str += " OR subject:({})".format(object)
-        else:
-            query_str = ",".join(query_list)
+        query_str = ",".join(query_list)
 
-        if mode == 'or' or mode == 'filter':
+        if mode == 'or':
             q = self._query_parser_or.parse(query_str)
         else:
             q = self._query_parser_and.parse(query_str)
+
+        return q
+
+    def build_filter_query(self, subject=None, object=None):
+        """构建关于三元组的查询语句
+        """
+        query_str = ""
+
+        if subject:
+            query_str += "subject:({})".format(subject)
+
+        if object:
+            query_str += " AND (object:({}) OR subject:({}))".format(object, object)
+
+        q = self._query_parser_or.parse(query_str)
 
         return q
 
@@ -109,15 +119,15 @@ class TripleIndex:
 
         return triples
 
-    def search_candidates(self, subject=None, predicate=None, object=None, mode='or', max_result_count=20):
+    def search_candidates(self, subject=None, object=None, max_result_count=20):
         """搜索结果用candidate来表示，这里包含搜索的得分
         """
         key = self._get_cache_key(
-            subject, predicate, object, mode, max_result_count)
-        
+            subject, None, object, max_result_count)
+
         results = self._candidate_cache.get(key)
         if not results:
-            q = self.build_query(subject, predicate, object, mode)
+            q = self.build_filter_query(subject, object)
             se_results = self._searcher.search(q, limit=max_result_count)
 
             results = []

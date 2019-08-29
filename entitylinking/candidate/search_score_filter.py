@@ -13,7 +13,6 @@ class SearchScoreFilter(CandidateFilter):
         if mention_context:
             candidates_search = TripleIndex.instance().search_candidates(subject=mention.word,
                                                                   object=mention_context,
-                                                                  mode='filter',
                                                                   max_result_count=20)
             candidate_dic = {}
             for cand in candidates:

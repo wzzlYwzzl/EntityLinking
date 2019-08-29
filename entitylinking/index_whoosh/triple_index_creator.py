@@ -1,4 +1,5 @@
 import os
+import re
 import datetime
 import timeit
 import logging
@@ -17,6 +18,7 @@ report_period = 10000
 # 基于jieba的analyzer
 analyzer = ChineseAnalyzer()
 analyzer_subject = ChineseAnalyzer(cut_all=False)
+re_mention = '（.+）'
 
 
 def triple_index_create(data, index_dir):
@@ -50,17 +52,8 @@ def _create_jieba_schema():
     """创建Schema，这里使用的是jieba分词器
     """
     schema = Schema(subject=TEXT(stored=True, analyzer=analyzer_subject),
-                    predicate=TEXT(stored=False, analyzer=analyzer),
-                    object=TEXT(stored=False, analyzer=analyzer))
-    return schema
-
-
-def _create_accurate_schema():
-    """
-    """
-    schema = Schema(subject=TEXT(stored=True),
-                    predicate=TEXT(stored=True),
-                    object=TEXT(stored=True))
+                    predicate=TEXT(stored=True, analyzer=analyzer),
+                    object=TEXT(stored=True, analyzer=analyzer))
     return schema
 
 
