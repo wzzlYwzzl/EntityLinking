@@ -1,5 +1,10 @@
 import pytest
 
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from entitylinking.graph.node import Node
 import networkx as nx
 
@@ -42,4 +47,7 @@ def test_node_add():
     
     node3 = Node("abc", 2, 'hits')
     G.add_node(node3)
-    assert G.number_of_nodes() == 2
+    for node in G.nodes:
+        print(node.value, node.level)
+    
+test_node_add()

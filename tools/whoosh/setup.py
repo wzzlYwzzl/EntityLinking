@@ -42,7 +42,7 @@ if __name__ == "__main__":
         keywords="index search text spell",
         url="http://bitbucket.org/mchaput/whoosh",
 
-        zip_safe=True,
+        zip_safe=False,
         install_requires=['cached-property'],
         tests_require=['pytest'],
         cmdclass={'test': PyTest},

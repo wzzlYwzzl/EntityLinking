@@ -27,5 +27,5 @@ def hits_analyze(graph, iter):
             sum_hub += node.hub_weight
 
         for node in graph.nodes:
-            node.authority_weight = node.unnormarized_authority_weight / sum_authority
-            node.hub_weight = node.unnormarized_hub_weight / sum_hub
+            node.authority_weight += node.unnormarized_authority_weight / sum_authority
+            node.hub_weight += node.unnormarized_hub_weight / sum_hub

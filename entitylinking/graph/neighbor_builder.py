@@ -27,7 +27,7 @@ def insert_neighbors(graph, triple_index, max_depth, algorithm):
             for triple in neighbor_triples:
                 if triple.object:
                     new_level = level + 1
-                    new_node = Node(triple.object, new_level, algorithm)
+                    new_node = Node(triple.object, new_level, algorithm, hits_score=0)
                     node_queue.put(new_node)
                     graph.add_edge(node, new_node, predicate=triple.predicate)
 

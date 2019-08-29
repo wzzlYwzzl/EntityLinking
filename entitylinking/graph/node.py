@@ -2,7 +2,7 @@ class Node:
     """图的一个节点
     """
 
-    def __init__(self, value, level, algorithm, base_score=0):
+    def __init__(self, value, level, algorithm, base_score=0, hits_score=1):
         # 与这个Node有关的内容不止一个，将它们的唯一标识都添加到ids
         self.ids = set()
 
@@ -17,13 +17,13 @@ class Node:
         self.page_rank_new = 0
 
         # 下面用于hits算法
-        self.hub_weight = 1
-        self.authority_weight = 1
+        self.hub_weight = hits_score
+        self.authority_weight = hits_score
         self.hub_weight_for_calculation = 1
-        self.authority_weight_for_calculation = 1
+        self.authority_weight_for_calculation = 0.8
         # 用于计算hub_weight时，临时存储中间值
         self.unnormarized_hub_weight = 1
-        self.unnormarized_authority_weight = 1
+        self.unnormarized_authority_weight = 0.8
 
         # 当前node的有其他逻辑确定的初始得分
         self.base_score = base_score
