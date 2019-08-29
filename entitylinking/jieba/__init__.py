@@ -53,7 +53,7 @@ re_skip_cut_all = re.compile("[^a-zA-Z0-9+#\n]", re.U)
 
 
 def setLogLevel(log_level):
-    global logger
+    global default_logger
     default_logger.setLevel(log_level)
 
 

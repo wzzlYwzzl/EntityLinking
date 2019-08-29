@@ -29,6 +29,7 @@ class DictNER:
         """
         self._entity_dict = {}
         self._load_dic_file(dic_file)
+        jieba.load_userdict(dic_file)
 
     def get_mentions(self, text):
         """从text中识别词典中的词
