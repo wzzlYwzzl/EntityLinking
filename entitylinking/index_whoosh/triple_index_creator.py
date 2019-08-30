@@ -3,6 +3,7 @@ import re
 import datetime
 import timeit
 import logging
+from multiprocessing import cpu_count
 
 from whoosh.index import create_in
 from whoosh.fields import *
@@ -47,9 +48,14 @@ def _create_triple_index(storage, data):
         ix = storage.open_index(indexname='triple')
     else:
         ix = storage.create_index(schema, indexname='triple')
-    writer = ix.writer()
+    writer = ix.writer(procs=cpu_count())
     _write_document(writer, data)
+
+    default_logger.info("开始commit")
+    start = timeit.default_timer()
     writer.commit()
+    end = timeit.default_timer()
+    default_logger.info("完成commit，commit耗时:{}".format(end - start))
 
 
 def _create_jieba_schema():
