@@ -13,10 +13,15 @@ default_logger.setLevel(logging.DEBUG)
 default_logger.addHandler(log_console)
 
 # bulk单次的doc数量
-bulk_count = 10000
+bulk_count = 30000
 
 index_config = {
     'settings': {
+        "refresh_interval": "30s",
+        "merge.policy.max_merged_segment": "1000mb",
+        "translog.durability": "async",
+        "translog.flush_threshold_size": "2gb",
+        "translog.sync_interval": "100s",
         "analysis": {
             "filter": {
                 "jieba_stop": {
@@ -108,7 +113,7 @@ def _build_action(indexname, subject, predicate, object):
     """
     action = {
         '_index': indexname,
-        '_op_type': 'index', #这个操作表示索引文档
+        '_op_type': 'index',  # 这个操作表示索引文档
         '_source': {
             'subject': subject,
             'predicate': predicate,
