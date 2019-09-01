@@ -1,10 +1,9 @@
+# encoding=utf-8
 import sys
 import logging
 import timeit
 import multiprocessing
-from multiprocessing import Process
-import threading
-import queue
+from multiprocessing import Pool
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -17,9 +16,9 @@ default_logger.setLevel(logging.DEBUG)
 default_logger.addHandler(log_console)
 
 # bulk单次的doc数量
-bulk_count = 30000
+bulk_count = 20000
 # 并发数量
-process_count = 2
+process_count = 8
 
 
 # 创建索引时使用的配置，创建后要修改这个配置
@@ -87,61 +86,51 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
             es.indices.delete(index=indexname)
     ret = es.indices.create(index=indexname, body=index_config)
     default_logger.info("创建索引，返回结果：{}".format(ret))
-    _write_doc_multi_process(es, indexname, data)
+    write_doc_multi_process(indexname, data)
     es.indices.put_settings(index=indexname, body=index_config_after)
 
 
-def one_process(es, indexname, actions, count, start):
-    """单个进程的处理逻辑
+def get_es_client():
+    """获取ES Client
     """
-    success, _ = bulk(es, actions, index=indexname, raise_on_error=True)
-    end = timeit.default_timer()
-    default_logger.info("状态: {}, 完成{}行, 耗时：{}".format(success, count, end - start))
+    return Elasticsearch()
 
 
-def _write_doc_multi_process(es, indexname, data_dir):
-    """多线程模式写入数据
+def write_doc_multi_process(indexname, data_dir):
+    """多进程模式写入数据，按照文件创建进程
     """
-    pool = multiprocessing.Pool(processes=process_count)
-
-    actions_iter = _get_actions_iterator(indexname, data_dir)
-    count = 0
-    start = timeit.default_timer()
-    for actions in actions_iter:
-        count += len(actions)
-        pool.apply_async(one_process, args=(es, indexname, actions, count, start))
+    pool = Pool(processes=process_count)
+    files = get_files(data_dir)
+    for file in files:
+        pool.apply_async(write_document_one_file, args=(indexname, file))
     pool.close()
     pool.join()
 
 
-def _write_document(es, indexname, data_dir):
-    """将data_dir目录下的文件写入到writer中。
+def write_document_one_file(indexname, file_name):
+    """将file_name文件写入到writer中。
     """
-    actions_iter = _get_actions_iterator(indexname, data_dir)
-    for actions in actions_iter:
-        pass
     count = 0
-    files = get_files(data_dir)
-
     start = timeit.default_timer()
     actions = []
-    for file in files:
-        with open(file, mode='r', encoding='utf8') as f:
-            for line in f:
-                fields = line.split('\t')
-                if len(fields) == 3:
-                    count += 1
-                    action = _build_action(indexname=indexname,
-                                           subject=fields[0].strip(),
-                                           predicate=fields[1].strip(),
-                                           object=fields[2].strip())
-                    actions.append(action)
-                if count > 0 and count % bulk_count == 0:
-                    success, _ = bulk(
-                        es, actions, index=indexname, raise_on_error=True)
-                    end = timeit.default_timer()
-                    default_logger.info("状态: {}, 完成{}行，耗时{}".format(
-                        success, count, end-start))
+
+    es = get_es_client()
+    with open(file_name, mode='r', encoding='utf8') as f:
+        for line in f:
+            fields = line.split('\t')
+            if len(fields) == 3:
+                count += 1
+                action = _build_action(indexname=indexname,
+                                       subject=fields[0].strip(),
+                                       predicate=fields[1].strip(),
+                                       object=fields[2].strip())
+                actions.append(action)
+            if count > 0 and count % bulk_count == 0:
+                success, _ = bulk(
+                    es, actions, index=indexname, raise_on_error=True)
+                end = timeit.default_timer()
+                default_logger.info("状态: {}, 完成{}行，耗时{}".format(
+                    success, count, end-start))
     if len(actions) > 0:
         bulk(es, actions, index=indexname, raise_on_error=True)
     end = timeit.default_timer()
