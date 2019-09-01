@@ -1,6 +1,10 @@
 import sys
 import logging
 import timeit
+import multiprocessing
+from multiprocessing import Process
+import threading
+import queue
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -14,10 +18,14 @@ default_logger.addHandler(log_console)
 
 # bulk单次的doc数量
 bulk_count = 30000
+# 并发数量
+process_count = 2
 
+
+# 创建索引时使用的配置，创建后要修改这个配置
 index_config = {
     'settings': {
-        "refresh_interval": "30s",
+        "refresh_interval": "-1",
         "merge.policy.max_merged_segment": "1000mb",
         "translog.durability": "async",
         "translog.flush_threshold_size": "2gb",
@@ -58,6 +66,12 @@ index_config = {
     }
 }
 
+index_config_after = {
+    'settings': {
+        "refresh_interval": "30s",
+    }
+}
+
 
 def triple_index_create(indexname='triple', data=None, overwrite=False):
     """创建三元组的索引
@@ -73,12 +87,39 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
             es.indices.delete(index=indexname)
     ret = es.indices.create(index=indexname, body=index_config)
     default_logger.info("创建索引，返回结果：{}".format(ret))
-    _write_document(es, indexname, data)
+    _write_doc_multi_process(es, indexname, data)
+    es.indices.put_settings(index=indexname, body=index_config_after)
+
+
+def one_process(es, indexname, actions, count, start):
+    """单个进程的处理逻辑
+    """
+    success, _ = bulk(es, actions, index=indexname, raise_on_error=True)
+    end = timeit.default_timer()
+    default_logger.info("状态: {}, 完成{}行, 耗时：{}".format(success, count, end - start))
+
+
+def _write_doc_multi_process(es, indexname, data_dir):
+    """多线程模式写入数据
+    """
+    pool = multiprocessing.Pool(processes=process_count)
+
+    actions_iter = _get_actions_iterator(indexname, data_dir)
+    count = 0
+    start = timeit.default_timer()
+    for actions in actions_iter:
+        count += len(actions)
+        pool.apply_async(one_process, args=(es, indexname, actions, count, start))
+    pool.close()
+    pool.join()
 
 
 def _write_document(es, indexname, data_dir):
     """将data_dir目录下的文件写入到writer中。
     """
+    actions_iter = _get_actions_iterator(indexname, data_dir)
+    for actions in actions_iter:
+        pass
     count = 0
     files = get_files(data_dir)
 
@@ -106,6 +147,31 @@ def _write_document(es, indexname, data_dir):
     end = timeit.default_timer()
     default_logger.info("完成{}行，耗时{}秒".format(count, end-start))
     default_logger.info("完成索引创建")
+
+
+def _get_actions_iterator(indexname, data_dir):
+    """获取actions的迭代器，每次返回的是指定数量的actions
+    """
+    count = 0
+    files = get_files(data_dir)
+
+    start = timeit.default_timer()
+    actions = []
+    for file in files:
+        with open(file, mode='r', encoding='utf8') as f:
+            for line in f:
+                fields = line.split('\t')
+                if len(fields) == 3:
+                    count += 1
+                    action = _build_action(indexname=indexname,
+                                           subject=fields[0].strip(),
+                                           predicate=fields[1].strip(),
+                                           object=fields[2].strip())
+                    actions.append(action)
+                if count > 0 and count % bulk_count == 0:
+                    yield actions
+    if len(actions) > 0:
+        yield actions
 
 
 def _build_action(indexname, subject, predicate, object):
