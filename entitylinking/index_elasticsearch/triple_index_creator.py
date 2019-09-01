@@ -4,7 +4,7 @@ import os
 import logging
 import timeit
 import multiprocessing
-from multiprocessing import Pool
+from multiprocessing import Pool,cpu_count
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -19,7 +19,7 @@ default_logger.addHandler(log_console)
 # bulk单次的doc数量
 bulk_count = 20000
 # 并发数量
-process_count = 8
+process_count = cpu_count()
 
 
 # 创建索引时使用的配置，创建后要修改这个配置
