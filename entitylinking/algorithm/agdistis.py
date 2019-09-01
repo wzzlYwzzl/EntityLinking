@@ -64,9 +64,9 @@ class Agdistis:
         insert_neighbors(graph, self._triple_index,
                          self._max_depth, self._algorithm)
 
-        options = {'node_color': 'black', 'node_size': 20, 'width': 1}
-        nx.draw_random(graph, **options)
-        plt.savefig('test.png')
+        #options = {'node_color': 'black', 'node_size': 20, 'width': 1}
+        #nx.draw_random(graph, **options)
+        #plt.savefig('test.png')
         # plt.show()
 
         # 使用链接算法更新节点权重

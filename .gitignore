@@ -6,7 +6,8 @@ data/index*
 ## Python
 #############
 
-*.py[co]
+*.pyc
+*.pyo
 __pycache__
 
 # Packages
@@ -43,3 +44,5 @@ test/tmp/*
 *.class
 
 MANIFEST
+entitylinking/graph/__pycache__/node.cpython-37.pyc
+entitylinking/graph/__pycache__/node.cpython-37.pyc

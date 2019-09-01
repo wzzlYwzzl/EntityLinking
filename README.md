@@ -76,13 +76,13 @@ from whoosh.qparser import QueryParser
 import sys
 sys.path.append('/Users/caoxiaojie/pythonCode/EntityLinking')
 
-index_dir = '/Users/caoxiaojie/pythonCode/EntityLinking/data/index_all'
+index_dir = '/Users/caoxiaojie/pythonCode/EntityLinking/data/index_test'
 ix = index.open_dir(index_dir, indexname='triple')
 s = ix.searcher()
 qp = QueryParser('subject',schema=ix.schema,group=qparser.OrGroup)
 qp2 = QueryParser('subject',schema=ix.schema)
 
-q = qp.parse(u'subject:(李娜) AND object:(唱歌的)')
+q = qp.parse(u'subject:(李娜) AND object:(唱歌) OR subject(唱歌)')
 
 results = s.search(q, limit=20)
 
