@@ -67,7 +67,7 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
             # 如果是覆盖，那么就删除原来的
             es.indices.delete(index=indexname)
     ret = es.indices.create(index=indexname, body=index_config)
-    default_logger.info("创建索引，返回结果：", ret)
+    default_logger.info("创建索引，返回结果：{}".format(ret))
     _write_document(es, indexname, data)
 
 
