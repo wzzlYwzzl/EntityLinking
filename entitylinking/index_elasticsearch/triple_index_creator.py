@@ -1,5 +1,6 @@
 # encoding=utf-8
 import sys
+import os
 import logging
 import timeit
 import multiprocessing
@@ -129,13 +130,13 @@ def write_document_one_file(indexname, file_name):
                 success, _ = bulk(
                     es, actions, index=indexname, raise_on_error=True)
                 end = timeit.default_timer()
-                default_logger.info("状态: {}, 完成{}行，耗时{}".format(
-                    success, count, end-start))
+                default_logger.info("进程:{}, 状态: {}, 完成{}行，耗时{}".format(
+                    os.getpid(), success, count, end-start))
     if len(actions) > 0:
         bulk(es, actions, index=indexname, raise_on_error=True)
     end = timeit.default_timer()
-    default_logger.info("完成{}行，耗时{}秒".format(count, end-start))
-    default_logger.info("完成索引创建")
+    default_logger.info("进程 {} 完成{}行，耗时{}秒".format(os.getpid(), count, end-start))
+    default_logger.info("进程{}完成索引创建".format(os.getpid()))
 
 
 def _get_actions_iterator(indexname, data_dir):
