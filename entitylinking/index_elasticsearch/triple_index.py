@@ -56,7 +56,7 @@ class TripleIndex:
         results = self._triple_cache.get(key)
         if not results:
             q = self.build_search_query(subject, predicate, object, mode)
-            results = self.search_triples(q, max_result_count)
+            results = self.search_triples(q, mode, max_result_count)
             self._triple_cache.add(key, results)
 
         return results
@@ -75,15 +75,19 @@ class TripleIndex:
         if object:
             query_list.append("object:({})".format(object))
 
+        operator = "OR"
+
         if mode == 'or':
             query_str = " OR ".join(query_list)
         else:
             query_str = " AND ".join(query_list)
+            operator = "AND"
 
         query = {
-            "query":{
+            "query": {
                 "query_string": {
-                    "query": query_str
+                    "query": query_str,
+                    "default_operator": operator
                 }
             }
         }
@@ -98,21 +102,26 @@ class TripleIndex:
             query_str += "subject:({})".format(subject)
 
         if object:
-            query_str += " AND (object:({}) OR subject:({}))".format(object, object)
+            query_str += " AND search_field:({})".format(object, object)
 
         query = {
-            "query":{
+            "query": {
                 "query_string": {
                     "query": query_str
                 }
             }
         }
+
+        print("fiter:", query)
         return query
 
-    def search_triples(self, q, max_result_count):
+    def search_triples(self, q, mode, max_result_count):
         """搜索结果使用三元组来表示
         """
-        results = self.es.search(index=self.indexname, body=q, size=max_result_count)
+        df = 'OR' if mode == 'or' else 'AND'
+
+        results = self.es.search(
+            index=self.indexname, body=q, size=max_result_count)
 
         hits_list = results['hits']['hits']
         triples = []
@@ -135,7 +144,8 @@ class TripleIndex:
         results = self._candidate_cache.get(key)
         if not results:
             q = self.build_filter_query(subject, object)
-            se_results = self.es.search(index=self.indexname, body=q, size=max_result_count)
+            se_results = self.es.search(
+                index=self.indexname, body=q, size=max_result_count)
             hits_list = se_results['hits']['hits']
             results = []
             for result in hits_list:

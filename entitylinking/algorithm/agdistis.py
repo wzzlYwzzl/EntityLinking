@@ -10,7 +10,7 @@ from ..candidate.candidate import Candidate
 from ..graph.neighbor_builder import insert_neighbors
 from ..graph.hits import hits_analyze
 from ..graph.pagerank import pagerank_analyze
-from ..index_whoosh.triple_index import TripleIndex
+from ..index_elasticsearch.triple_index import TripleIndex
 import entitylinking.jieba as jieba
 
 
@@ -23,7 +23,7 @@ class Agdistis:
         # 候选实体所在图谱的关系节点的深度
         self._max_depth = int(AppConfig.instance().max_depth)
         self._algorithm = AppConfig.instance().algorithm
-        TripleIndex.init_instance(AppConfig.instance().index_dir)
+        TripleIndex.init_instance()
         self._triple_index = TripleIndex.instance()
         jieba.load_userdict(AppConfig.instance().user_dic)
 

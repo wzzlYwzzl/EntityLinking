@@ -4,7 +4,7 @@ import os
 import logging
 import timeit
 import multiprocessing
-from multiprocessing import Pool,cpu_count
+from multiprocessing import Pool, cpu_count
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -44,6 +44,13 @@ index_config = {
                         "lowercase",
                         "jieba_stop"
                     ]
+                },
+                "jieba_index_all_analyzer":{
+                    "tokenizer": "jieba_index_all",
+                    "filter": [
+                        "lowercase",
+                        "jieba_stop"
+                    ]
                 }
             }
         }
@@ -52,15 +59,22 @@ index_config = {
         "properties": {
             "subject": {
                 "type": "text",
-                "analyzer": "jieba_index_analyzer",
-                "store": True
+                "analyzer": "jieba_search",
+                "store": True,
+                "copy_to": "search_field"
             },
             "predicate": {
                 "type": "keyword"
             },
             "object": {
                 "type": "text",
-                "store": True
+                "store": True,
+                "analyzer": "jieba_index_analyzer",
+                "copy_to": "search_field"
+            },
+            "search_field": {
+                "type": "text",
+                "analyzer": "jieba_index_all_analyzer"
             }
         }
     }
@@ -136,7 +150,8 @@ def write_document_one_file(indexname, file_name):
     if len(actions) > 0:
         bulk(es, actions, index=indexname, raise_on_error=True)
     end = timeit.default_timer()
-    default_logger.info("进程 {} 完成{}行，耗时{}秒".format(os.getpid(), count, end-start))
+    default_logger.info("进程 {} 完成{}行，耗时{}秒".format(
+        os.getpid(), count, end-start))
     default_logger.info("进程{}完成索引创建".format(os.getpid()))
 
 

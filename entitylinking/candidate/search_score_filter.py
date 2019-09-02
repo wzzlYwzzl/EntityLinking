@@ -1,5 +1,5 @@
 from .candidate_filter import CandidateFilter
-from ..index_whoosh.triple_index import TripleIndex
+from ..index_elasticsearch.triple_index import TripleIndex
 
 
 class SearchScoreFilter(CandidateFilter):
