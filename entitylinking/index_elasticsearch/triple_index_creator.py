@@ -124,7 +124,6 @@ def write_doc_parallel(indexname, data_dir):
     """
     start = timeit.default_timer()
     es = get_es_client()
-    print("1")
     actions_iter = get_actions_iterator(indexname, data_dir)
     ret = parallel_bulk(es, actions_iter, thread_count=process_count,
                         chunk_size=bulk_count, queue_size=process_count*2)
