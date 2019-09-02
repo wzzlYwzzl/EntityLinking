@@ -33,7 +33,8 @@ class TripleIndex:
     def __init__(self, es_client=None):
         # 索引
         if es_client:
-            self.es = Elasticsearch([es_client])
+            end_points = es_client.strip().split('$')
+            self.es = Elasticsearch(end_points)
         else:
             self.es = Elasticsearch()
         self.indexname = 'triple'

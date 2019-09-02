@@ -23,7 +23,7 @@ class Agdistis:
         # 候选实体所在图谱的关系节点的深度
         self._max_depth = int(AppConfig.instance().max_depth)
         self._algorithm = AppConfig.instance().algorithm
-        TripleIndex.init_instance()
+        TripleIndex.init_instance(AppConfig.instance().es_endpoints)
         self._triple_index = TripleIndex.instance()
         jieba.load_userdict(AppConfig.instance().user_dic)
 
