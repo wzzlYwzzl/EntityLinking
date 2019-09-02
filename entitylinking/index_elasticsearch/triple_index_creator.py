@@ -129,6 +129,7 @@ def write_document_one_file(indexname, file_name):
             if count > 0 and count % bulk_count == 0:
                 success, _ = bulk(
                     es, actions, index=indexname, raise_on_error=True)
+                actions.clear()
                 end = timeit.default_timer()
                 default_logger.info("进程:{}, 状态: {}, 完成{}行，耗时{}".format(
                     os.getpid(), success, count, end-start))
