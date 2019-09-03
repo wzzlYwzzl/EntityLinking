@@ -115,7 +115,7 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
 def get_es_client():
     """获取ES Client
     """
-    return Elasticsearch()
+    return Elasticsearch(timeout=60, max_retries=10,retry_on_timeout=True)
 
 
 def write_doc_multi_process(indexname, data_dir):

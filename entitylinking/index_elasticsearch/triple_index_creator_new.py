@@ -117,7 +117,7 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
 def get_es_client():
     """获取ES Client
     """
-    return Elasticsearch()
+    return Elasticsearch(timeout=60, max_retries=10,retry_on_timeout=True)
 
 
 def write_doc_parallel(es, indexname, data_dir):
@@ -127,7 +127,7 @@ def write_doc_parallel(es, indexname, data_dir):
     actions_iter = get_actions_iterator(indexname, data_dir)
     #ret = parallel_bulk(es, actions_iter, thread_count=process_count,
     #                    chunk_size=bulk_count, queue_size=process_count*2)
-    ret = streaming_bulk(es, actions_iter, chunk_size=bulk_count, max_retries=10)
+    ret = streaming_bulk(es, actions_iter, chunk_size=bulk_count, max_retries=10, request_timeout=10000)
     count = 0
     for ok, info in ret:
         count += 1
