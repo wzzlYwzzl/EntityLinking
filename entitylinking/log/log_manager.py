@@ -17,6 +17,7 @@ class LogManager:
         if not hasattr(cls, "_instance"):
             with cls._lock:
                 cls._instance = LogManager()
+                return cls._instance
         else:
             return cls._instance
 

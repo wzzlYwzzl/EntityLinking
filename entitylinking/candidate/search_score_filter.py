@@ -12,8 +12,8 @@ class SearchScoreFilter(CandidateFilter):
         mention_context = mention.context_str(' ')
         if mention_context:
             candidates_search = TripleIndex.instance().search_candidates(subject=mention.word,
-                                                                  object=mention_context,
-                                                                  max_result_count=20)
+                                                                         object=mention_context,
+                                                                         max_result_count=20)
             candidate_dic = {}
             for cand in candidates:
                 candidate_dic[cand.entity] = cand
@@ -28,6 +28,8 @@ class SearchScoreFilter(CandidateFilter):
             else:
                 self.score_normalization(ret_set)
                 return list(ret_set)
+        else:
+            return candidates
 
     def score_normalization(self, candidates):
         """得分归一化

@@ -31,7 +31,7 @@ class Mention:
         Arguments:
             join_str {str} -- 用于拼接的字符串
         """
-        return join_str.join(self.context)
+        return join_str.join(self.context).strip()
 
     def link_result(self):
         """与当前mention匹配得分最高的candidate

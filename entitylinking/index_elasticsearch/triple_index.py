@@ -1,4 +1,5 @@
 import threading
+import timeit
 
 from elasticsearch import Elasticsearch
 from cacheout import LRUCache
@@ -7,6 +8,7 @@ from cacheout import LRUCache
 from ..config.app_config import AppConfig
 from ..base.triple import Triple
 from ..candidate.candidate import Candidate
+from ..log.log_manager import LogManager
 
 
 class TripleIndex:
@@ -34,7 +36,8 @@ class TripleIndex:
         # 索引
         if es_client:
             end_points = es_client.strip().split('$')
-            self.es = Elasticsearch(end_points)
+            self.es = Elasticsearch(
+                end_points, timeout=60, max_retries=10, retry_on_timeout=True)
         else:
             self.es = Elasticsearch()
         self.indexname = 'triple'
@@ -57,7 +60,10 @@ class TripleIndex:
         results = self._triple_cache.get(key)
         if not results:
             q = self.build_search_query(subject, predicate, object, mode)
+            start = timeit.default_timer()
             results = self.search_triples(q, mode, max_result_count)
+            end = timeit.default_timer()
+            LogManager.instance().debug("查询：{},耗时：{}".format(q, end - start))
             self._triple_cache.add(key, results)
 
         return results
@@ -145,8 +151,11 @@ class TripleIndex:
         results = self._candidate_cache.get(key)
         if not results:
             q = self.build_filter_query(subject, object)
+            start = timeit.default_timer()
             se_results = self.es.search(
                 index=self.indexname, body=q, size=max_result_count)
+            end = timeit.default_timer()
+            LogManager.instance().debug("查询：{},耗时：{}".format(q, end - start))
             hits_list = se_results['hits']['hits']
             results = []
             for result in hits_list:
