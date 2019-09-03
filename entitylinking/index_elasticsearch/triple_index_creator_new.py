@@ -39,6 +39,11 @@ index_config = {
                 "jieba_stop": {
                     "type": "stop",
                     "stopwords_path": "stopwords/stopwords.txt"
+                },
+                "jieba_synonym": {
+                    "type": "dynamic_synonym",
+                    "synonyms_path": "synonyms/synonyms.txt",
+                    "lenient": True
                 }
             },
             "analyzer": {
@@ -46,14 +51,16 @@ index_config = {
                     "tokenizer": "jieba_index",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"
+                        "jieba_stop",
+                        "jieba_synonym"
                     ]
                 },
                 "jieba_index_all_analyzer": {
                     "tokenizer": "jieba_index_all",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"
+                        "jieba_stop",
+                        "jieba_synonym"
                     ]
                 }
             }

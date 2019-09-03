@@ -37,6 +37,11 @@ index_config = {
                 "jieba_stop": {
                     "type": "stop",
                     "stopwords_path": "stopwords/stopwords.txt"
+                },
+                "jieba_synonym": {
+                    "type": "synonym",
+                    "synonyms_path": "synonyms/synonyms.txt",
+                    "lenient": True
                 }
             },
             "analyzer": {
@@ -44,14 +49,16 @@ index_config = {
                     "tokenizer": "jieba_index",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"
+                        "jieba_stop",
+                        "jieba_synonym"
                     ]
                 },
                 "jieba_index_all_analyzer": {
                     "tokenizer": "jieba_index_all",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"
+                        "jieba_stop",
+                        "jieba_synonym"
                     ]
                 }
             }
@@ -115,7 +122,7 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
 def get_es_client():
     """获取ES Client
     """
-    return Elasticsearch(timeout=60, max_retries=10,retry_on_timeout=True)
+    return Elasticsearch(timeout=60, max_retries=10, retry_on_timeout=True)
 
 
 def write_doc_multi_process(indexname, data_dir):

@@ -3,9 +3,8 @@ from ..ner.dict_ner import DictNER
 import entitylinking.jieba as jieba
 
 
-
 stop_words = {
-    '的', '是', '了', '和', '地', '得', '在', '这', '吗', '呢', '啊'
+    '的', '是', '了', '和', '地', '得', '在', '这', '吗', '呢', '啊', '不', '不是'
 }
 
 

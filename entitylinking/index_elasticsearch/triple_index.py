@@ -1,5 +1,6 @@
 import threading
 import timeit
+import re
 
 from elasticsearch import Elasticsearch
 from cacheout import LRUCache
@@ -136,7 +137,7 @@ class TripleIndex:
             source = result['_source']
             subject = source['subject']
             predicate = source['predicate']
-            object = source['object']
+            object = re.sub(r'<a>|</a>','', source['object'])
             triple = Triple(subject, predicate, object)
             triples.append(triple)
 
