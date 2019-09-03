@@ -7,7 +7,7 @@ import multiprocessing
 from multiprocessing import Pool, cpu_count
 
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk, streaming_bulk
+from elasticsearch.helpers import bulk, parallel_bulk,streaming_bulk
 
 from ..utils.file_utils import get_files
 
@@ -17,9 +17,11 @@ default_logger.setLevel(logging.DEBUG)
 default_logger.addHandler(log_console)
 
 # bulk单次的doc数量
-bulk_count = 1000
+bulk_count = 500
 
+# 多少记录汇报一次
 report_count = 20000
+
 # 并发数量
 process_count = cpu_count()
 
@@ -106,7 +108,7 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
         ret = es.indices.create(index=indexname, body=index_config)
         default_logger.info("创建索引，返回结果：{}".format(ret))
     start = timeit.default_timer()
-    write_doc_multi_process(indexname, data)
+    write_doc_parallel(es, indexname, data)
     end = timeit.default_timer()
     default_logger.info("完成索引的创建，共耗时：{}".format(end - start))
     es.indices.put_settings(index=indexname, body=index_config_after)
@@ -118,48 +120,33 @@ def get_es_client():
     return Elasticsearch()
 
 
-def write_doc_multi_process(indexname, data_dir):
-    """多进程模式写入数据，按照文件创建进程
+def write_doc_parallel(es, indexname, data_dir):
+    """并发创建索引
     """
-    pool = Pool(processes=process_count)
-    files = get_files(data_dir)
-    for file in files:
-        pool.apply_async(write_document_one_file, args=(indexname, file))
-    pool.close()
-    pool.join()
-
-
-def write_document_one_file(indexname, file_name):
-    """将file_name文件写入到writer中。
-    """
-    count = 0
     start = timeit.default_timer()
-    actions = []
-
-    es = get_es_client()
-    try:
-        action_iter = get_actions_iterator(indexname, file_name)
-        ret = streaming_bulk(es, action_iter, chunk_size=bulk_count)
-        for ok, info in ret:
-            count += 1
-            if count > 0 and count % report_count == 0:
-                end = timeit.default_timer()
-                default_logger.info("进程:{}, 状态: {}, 完成{}行，耗时{}".format(
-                    os.getpid(), ok, count, end-start))
-
-        end = timeit.default_timer()
-        default_logger.info("进程 {} 完成{}行，耗时{}秒".format(
-            os.getpid(), count, end-start))
-        default_logger.info("进程{}完成索引创建".format(os.getpid()))
-    except Exception as e:
-        default_logger.info("出现异常:{}".format(e))
+    actions_iter = get_actions_iterator(indexname, data_dir)
+    #ret = parallel_bulk(es, actions_iter, thread_count=process_count,
+    #                    chunk_size=bulk_count, queue_size=process_count*2)
+    ret = streaming_bulk(es, actions_iter, chunk_size=bulk_count, max_retries=10)
+    count = 0
+    for ok, info in ret:
+        count += 1
+        if count > 0 and count % report_count == 0:
+            end = timeit.default_timer()
+            default_logger.info("完成{}行，耗时{}".format(count, end - start))
+        if not ok:
+            default_logger.info("出现错误：{}".format(info))
+    end = timeit.default_timer()
+    default_logger.info("完成{}行，耗时{}".format(count, end - start))
 
 
 def get_actions_iterator(indexname, data_dir):
-    """获取actions的迭代器，每次返回的是指定数量的actions
+    """获取actions的迭代器
     """
     count = 0
     files = get_files(data_dir)
+
+    start = timeit.default_timer()
     for file in files:
         with open(file, mode='r', encoding='utf8') as f:
             for line in f:
