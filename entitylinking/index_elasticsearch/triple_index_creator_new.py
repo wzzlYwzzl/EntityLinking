@@ -41,7 +41,7 @@ index_config = {
                     "stopwords_path": "stopwords/stopwords.txt"
                 },
                 "jieba_synonym": {
-                    "type": "dynamic_synonym",
+                    "type": "synonym",
                     "synonyms_path": "synonyms/synonyms.txt",
                     "lenient": True
                 }
