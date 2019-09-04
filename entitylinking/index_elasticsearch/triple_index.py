@@ -143,7 +143,7 @@ class TripleIndex:
 
         return triples
 
-    def search_candidates(self, subject=None, object=None, max_result_count=20):
+    def search_candidates(self, subject=None, object=None, max_result_count=40):
         """搜索结果用candidate来表示，这里包含搜索的得分
         """
         key = self._get_cache_key(
