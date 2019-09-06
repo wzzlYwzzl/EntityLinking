@@ -1,3 +1,7 @@
+"""采用多进程的方式，将要构建索引的文件切分为多个，每个文件用独立的进程来处理
+速度非常快
+"""
+
 # encoding=utf-8
 import sys
 import os
@@ -7,7 +11,7 @@ import multiprocessing
 from multiprocessing import Pool, cpu_count
 
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk, streaming_bulk
+from elasticsearch.helpers import streaming_bulk
 
 from ..utils.file_utils import get_files
 
@@ -49,16 +53,16 @@ index_config = {
                     "tokenizer": "jieba_index",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"#,
-                        #"jieba_synonym"
+                        "jieba_stop"  # ,
+                        # "jieba_synonym"
                     ]
                 },
                 "jieba_index_all_analyzer": {
                     "tokenizer": "jieba_index_all",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"#,
-                        #"jieba_synonym"
+                        "jieba_stop"  # ,
+                        # "jieba_synonym"
                     ]
                 }
             }

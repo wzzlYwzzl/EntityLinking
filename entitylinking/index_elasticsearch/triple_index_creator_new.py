@@ -1,3 +1,5 @@
+"""这个采用多线程的方式，虽说是能提高性能，但是速度比不上多进程
+"""
 # encoding=utf-8
 import sys
 import os
@@ -7,7 +9,7 @@ import multiprocessing
 from multiprocessing import Pool, cpu_count
 
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk, parallel_bulk,streaming_bulk
+from elasticsearch.helpers import parallel_bulk
 
 from ..utils.file_utils import get_files
 
@@ -51,16 +53,16 @@ index_config = {
                     "tokenizer": "jieba_index",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"#,
-                        #"jieba_synonym"
+                        "jieba_stop"  # ,
+                        # "jieba_synonym"
                     ]
                 },
                 "jieba_index_all_analyzer": {
                     "tokenizer": "jieba_index_all",
                     "filter": [
                         "lowercase",
-                        "jieba_stop"#,
-                        #"jieba_synonym"
+                        "jieba_stop"  # ,
+                        # "jieba_synonym"
                     ]
                 }
             }
@@ -124,7 +126,7 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
 def get_es_client():
     """获取ES Client
     """
-    return Elasticsearch(timeout=60, max_retries=10,retry_on_timeout=True)
+    return Elasticsearch(timeout=60, max_retries=10, retry_on_timeout=True)
 
 
 def write_doc_parallel(es, indexname, data_dir):
@@ -132,9 +134,10 @@ def write_doc_parallel(es, indexname, data_dir):
     """
     start = timeit.default_timer()
     actions_iter = get_actions_iterator(indexname, data_dir)
-    #ret = parallel_bulk(es, actions_iter, thread_count=process_count,
+    # ret = parallel_bulk(es, actions_iter, thread_count=process_count,
     #                    chunk_size=bulk_count, queue_size=process_count*2)
-    ret = streaming_bulk(es, actions_iter, chunk_size=bulk_count, max_retries=10, request_timeout=10000)
+    ret = streaming_bulk(es, actions_iter, chunk_size=bulk_count,
+                         max_retries=10, request_timeout=10000)
     count = 0
     for ok, info in ret:
         count += 1
