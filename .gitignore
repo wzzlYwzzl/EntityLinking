@@ -1,6 +1,8 @@
 .vscode
 data/cn-pedia/*
 data/index*
+data/baidu/*
+data/text_dir/*
 
 #############
 ## Python
@@ -44,5 +46,4 @@ test/tmp/*
 *.class
 
 MANIFEST
-entitylinking/graph/__pycache__/node.cpython-37.pyc
 entitylinking/graph/__pycache__/node.cpython-37.pyc

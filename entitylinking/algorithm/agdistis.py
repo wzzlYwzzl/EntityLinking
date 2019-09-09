@@ -23,7 +23,9 @@ class Agdistis:
         # 候选实体所在图谱的关系节点的深度
         self._max_depth = int(AppConfig.instance().max_depth)
         self._algorithm = AppConfig.instance().algorithm
-        TripleIndex.init_instance(AppConfig.instance().es_endpoints)
+        es_endpoint = AppConfig.instance().es_endpoints
+        indexname = AppConfig.instance().indexname
+        TripleIndex.init_instance(es_endpoint, indexname)
         self._triple_index = TripleIndex.instance()
         #jieba.load_userdict(AppConfig.instance().user_dic)
 
@@ -48,7 +50,7 @@ class Agdistis:
                                   key=lambda iterm: iterm.length, reverse=True)
         CandidateUtils.instance().add_candidates(doc)
 
-        if len(doc.mention_list) <= 1:
+        if len(doc.mention_list) <= 1 or self._algorithm == 'none':
             # 如果只有一个mention，不需要后面的算法
             self._cache.add(doc.text, doc)
             doc.sort_candidates()

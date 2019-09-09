@@ -18,11 +18,11 @@ class TripleIndex:
     _lock = threading.Lock()
 
     @classmethod
-    def init_instance(cls, es_client=None):
+    def init_instance(cls, es_client=None, indexname='triple'):
         """初始化实例
         """
         with cls._lock:
-            cls._instance = TripleIndex(es_client)
+            cls._instance = TripleIndex(es_client, indexname)
 
     @classmethod
     def instance(cls):
@@ -33,7 +33,7 @@ class TripleIndex:
         else:
             return cls._instance
 
-    def __init__(self, es_client=None):
+    def __init__(self, es_client=None, indexname='triple_id'):
         # 索引
         if es_client:
             end_points = es_client.strip().split('$')
@@ -41,7 +41,7 @@ class TripleIndex:
                 end_points, timeout=60, max_retries=10, retry_on_timeout=True)
         else:
             self.es = Elasticsearch()
-        self.indexname = 'triple_id'
+        self.indexname = indexname
 
         # 搜索缓存
         self._triple_cache = LRUCache(maxsize=10 * 1024 * 1024, ttl=10 * 60)
