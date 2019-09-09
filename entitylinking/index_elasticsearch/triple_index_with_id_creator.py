@@ -1,5 +1,7 @@
-"""这个采用多线程的方式，虽说是能提高性能，但是速度比不上多进程
+"""采用多进程的方式，将要构建索引的文件切分为多个，每个文件用独立的进程来处理
+速度非常快。这里创建的索引是带有id的。
 """
+
 # encoding=utf-8
 import sys
 import os
@@ -9,7 +11,7 @@ import multiprocessing
 from multiprocessing import Pool, cpu_count
 
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import parallel_bulk, streaming_bulk
+from elasticsearch.helpers import streaming_bulk
 
 from ..utils.file_utils import get_files
 
@@ -19,14 +21,11 @@ default_logger.setLevel(logging.DEBUG)
 default_logger.addHandler(log_console)
 
 # bulk单次的doc数量
-bulk_count = 500
+bulk_count = 1000
 
-# 多少记录汇报一次
 report_count = 20000
-
 # 并发数量
 process_count = cpu_count()
-
 
 # 创建索引时使用的配置，创建后要修改这个配置
 index_config = {
@@ -70,6 +69,9 @@ index_config = {
     },
     "mappings": {
         "properties": {
+            "subject_id": {
+                "type": "integer"
+            },
             "subject": {
                 "type": "text",
                 "analyzer": "jieba_search",
@@ -85,6 +87,9 @@ index_config = {
                 "analyzer": "jieba_index_analyzer",
                 "copy_to": "search_field"
             },
+            "object_id": {
+                "type": "integer"
+            },
             "search_field": {
                 "type": "text",
                 "analyzer": "jieba_index_all_analyzer"
@@ -99,8 +104,11 @@ index_config_after = {
     }
 }
 
+# 存放subject:id对应关系
+id_dict = {}
 
-def triple_index_create(indexname='triple', data=None, overwrite=False):
+
+def triple_index_create(indexname='triple', id_file=None, data=None, overwrite=False):
     """创建三元组的索引
     """
     # 初始化ES
@@ -117,7 +125,7 @@ def triple_index_create(indexname='triple', data=None, overwrite=False):
         ret = es.indices.create(index=indexname, body=index_config)
         default_logger.info("创建索引，返回结果：{}".format(ret))
     start = timeit.default_timer()
-    write_doc_parallel(es, indexname, data)
+    write_doc_multi_process(indexname, id_file, data)
     end = timeit.default_timer()
     default_logger.info("完成索引的创建，共耗时：{}".format(end - start))
     es.indices.put_settings(index=indexname, body=index_config_after)
@@ -129,34 +137,60 @@ def get_es_client():
     return Elasticsearch(timeout=60, max_retries=10, retry_on_timeout=True)
 
 
-def write_doc_parallel(es, indexname, data_dir):
-    """并发创建索引
+def load_id_file(id_file):
+    """加载id文件
     """
-    start = timeit.default_timer()
-    actions_iter = get_actions_iterator(indexname, data_dir)
-    # ret = parallel_bulk(es, actions_iter, thread_count=process_count,
-    #                    chunk_size=bulk_count, queue_size=process_count*2)
-    ret = streaming_bulk(es, actions_iter, chunk_size=bulk_count,
-                         max_retries=10, request_timeout=10000)
+    global id_dict
+    with open(id_file, mode='r', encoding='utf-8') as f:
+        for line in f:
+            fields = line.split('\t')
+            id_dict[fields[0]] = int(fields[1].strip())
+
+
+def write_doc_multi_process(indexname, id_file, data_dir):
+    """多进程模式写入数据，按照文件创建进程
+    """
+    load_id_file(id_file)
+
+    pool = Pool(processes=process_count)
+    files = get_files(data_dir)
+    for file in files:
+        pool.apply_async(write_document_one_file, args=(indexname, file))
+    pool.close()
+    pool.join()
+
+
+def write_document_one_file(indexname, file_name):
+    """将file_name文件写入到writer中。
+    """
     count = 0
-    for ok, info in ret:
-        count += 1
-        if count > 0 and count % report_count == 0:
-            end = timeit.default_timer()
-            default_logger.info("完成{}行，耗时{}".format(count, end - start))
-        if not ok:
-            default_logger.info("出现错误：{}".format(info))
-    end = timeit.default_timer()
-    default_logger.info("完成{}行，耗时{}".format(count, end - start))
+    start = timeit.default_timer()
+    actions = []
+
+    es = get_es_client()
+    try:
+        action_iter = get_actions_iterator(indexname, file_name)
+        ret = streaming_bulk(es, action_iter, chunk_size=bulk_count)
+        for ok, info in ret:
+            count += 1
+            if count > 0 and count % report_count == 0:
+                end = timeit.default_timer()
+                default_logger.info("进程:{}, 状态: {}, 完成{}行，耗时{}".format(
+                    os.getpid(), ok, count, end-start))
+
+        end = timeit.default_timer()
+        default_logger.info("进程 {} 完成{}行，耗时{}秒".format(
+            os.getpid(), count, end-start))
+        default_logger.info("进程{}完成索引创建".format(os.getpid()))
+    except Exception as e:
+        default_logger.info("出现异常:{}".format(e))
 
 
 def get_actions_iterator(indexname, data_dir):
-    """获取actions的迭代器
+    """获取actions的迭代器，每次返回的是指定数量的actions
     """
     count = 0
     files = get_files(data_dir)
-
-    start = timeit.default_timer()
     for file in files:
         with open(file, mode='r', encoding='utf8') as f:
             for line in f:
@@ -173,13 +207,22 @@ def get_actions_iterator(indexname, data_dir):
 def _build_action(indexname, subject, predicate, object):
     """创建一个bulk使用的action
     """
+    subject_id = id_dict[subject]
+
+    if object in id_dict:
+        object_id = id_dict[object]
+    else:
+        object_id = 0
+
     action = {
         '_index': indexname,
         '_op_type': 'index',  # 这个操作表示索引文档
         '_source': {
+            'subject_id': subject_id,
             'subject': subject,
             'predicate': predicate,
-            'object': object
+            'object': object,
+            'object_id': object_id
         }
     }
 

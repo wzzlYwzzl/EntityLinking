@@ -26,7 +26,7 @@ def load_id_file(id_file):
     with open(id_file, mode='r', encoding='utf-8') as f:
         for line in f:
             fields = line.split('\t')
-            id_dict[fields[0]] = fields[1]
+            id_dict[fields[0]] = fields[1].strip()
 
     return id_dict
 
@@ -43,13 +43,11 @@ def mention2id(mention_file, id_file, mention_out):
                 entity = fields[1].strip()
                 if entity in id_dict:
                     f_out.write('{}\t{}\n'.format(mention, id_dict[entity]))
-                else:
-                    f_out.write('{}\tNULL\n'.format(mention))
 
 
 cndbpedia_file = "/Users/caoxiaojie/pythonCode/EntityLinking/data/cn-pedia/test.txt"
 id_file = "/Users/caoxiaojie/pythonCode/EntityLinking/data/cn-pedia/id.txt"
-m2e = "/Users/caoxiaojie/pythonCode/EntityLinking/data/cn-pedia/m2e.txt"
+m2e = "/Users/caoxiaojie/pythonCode/EntityLinking/data/cn-pedia/test_m2e.txt"
 m2id = "/Users/caoxiaojie/pythonCode/EntityLinking/data/cn-pedia/m2id.txt"
 
 if __name__ == '__main__':

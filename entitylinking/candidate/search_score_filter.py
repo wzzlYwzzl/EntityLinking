@@ -1,5 +1,5 @@
 from .candidate_filter import CandidateFilter
-from ..index_elasticsearch.triple_index import TripleIndex
+from ..index_elasticsearch.triple_index_with_id import TripleIndex
 
 
 class SearchScoreFilter(CandidateFilter):
@@ -10,17 +10,16 @@ class SearchScoreFilter(CandidateFilter):
         """过滤候选实体
         """
         mention_context = mention.context_str(' ')
+        cand_ids = self.candidate_ids(candidates)
         if mention_context:
-            candidates_search = TripleIndex.instance().search_candidates(subject=mention.word,
+            candidates_search = TripleIndex.instance().search_candidates(subject_ids=cand_ids,
+                                                                         subject=mention.word,
                                                                          object=mention_context,
                                                                          max_result_count=40)
-            candidate_dic = {}
-            for cand in candidates:
-                candidate_dic[cand.entity] = cand
 
             ret_set = set()
             for cand in candidates_search:
-                if cand.entity in candidate_dic:
+                if cand.id not in ret_set:
                     ret_set.add(cand)
 
             if len(ret_set) == 0:
@@ -40,3 +39,11 @@ class SearchScoreFilter(CandidateFilter):
 
         for cand in candidates:
             cand.score = cand.score / sum_score
+
+    def candidate_ids(self, candidates):
+        """获取候选项的id list
+        """
+        ret = []
+        for cand in candidates:
+            ret.append(cand.id)
+        return ret

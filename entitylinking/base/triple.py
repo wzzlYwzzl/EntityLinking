@@ -1,16 +1,19 @@
 import re
 
+
 class Triple:
     """表示一个三元组SPO
     """
 
-    def __init__(self, subject, predicate, object):
+    def __init__(self, subject_id, subject, predicate, object, object_id=0):
+        self._id = subject_id
         self._subject = subject
         self._predicate = predicate
         if object != None:
-            self._object = re.sub(r'<a>|</a>', '', object)
+            self._object = object
         else:
             self._object = ""
+        self._object_id = object_id
 
     @property
     def subject(self):
@@ -35,3 +38,19 @@ class Triple:
     @object.setter
     def object(self, value):
         self._object = value
+
+    @property
+    def subject_id(self):
+        return self._id
+
+    @subject_id.setter
+    def subject_id(self, value):
+        self._id = value
+
+    @property
+    def object_id(self):
+        return self._object_id
+
+    @object_id.setter
+    def object_id(self, value):
+        self._object_id = value

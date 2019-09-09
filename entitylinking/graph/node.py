@@ -2,9 +2,12 @@ class Node:
     """图的一个节点
     """
 
-    def __init__(self, value, level, algorithm, base_score=0, hits_score=1):
+    def __init__(self, id, value, level, algorithm, base_score=0, hits_score=1):
         # 与这个Node有关的内容不止一个，将它们的唯一标识都添加到ids
         self.ids = set()
+
+        # 当前节点内容的id
+        self.id = id
 
         # 当前Node节点存储的取值信息
         self.value = value
@@ -51,13 +54,13 @@ class Node:
             return 0
 
     def __hash__(self):
-        return hash(self.value)
+        return hash(self.id)
 
     def __eq__(self, node):
         """重载==，判断依据Node的value是否相等
         """
         if isinstance(node, Node):
-            if self.value == node.value:
+            if self.id == node.id:
                 return True
             else:
                 return False

@@ -24,8 +24,13 @@ class CandidateUtils:
 
     def __init__(self):
         self._m2e_file = AppConfig.instance().m2e
+        self._subject2id_file = AppConfig.instance().subject2id
         self._m2e_dic = {}
+        self._id2subject = {}
         self.filters = []
+
+        # 必须先加载subject_id
+        self.load_subject_id()
         self.load_m2e()
         self.add_filters()
 
@@ -57,10 +62,28 @@ class CandidateUtils:
 
         return candidates
 
-    def load_m2e(self):
+    def load_subject_id(self):
         """加载mention与候选实体的对应关系文件。
         文件的格式约定如下：
         mention+tab+entity
+        也就是用tab分割mention和候选实体
+        """
+        subject2id_file = self._subject2id_file
+        if not os.path.exists(subject2id_file):
+            LogManager.instance().error("subject2id文件不存在")
+        with open(subject2id_file, mode='r', encoding='utf8') as f:
+            for line in f:
+                fields = line.strip().split('\t')
+                if len(fields) == 2:
+                    subject = fields[0].strip()
+                    subject_id = int(fields[1].strip())
+                    if subject_id not in self._id2subject:
+                        self._id2subject[subject_id] = subject
+
+    def load_m2e(self):
+        """加载实体与id的对应关系文件。
+        文件的格式约定如下：
+        subject+tab+id
         也就是用tab分割mention和候选实体
         """
         m2e_file = self._m2e_file
@@ -71,13 +94,14 @@ class CandidateUtils:
                 fields = line.strip().split('\t')
                 if len(fields) == 2:
                     mention = fields[0].strip()
-                    entity = fields[1].strip()
+                    subject_id = int(fields[1].strip())
+                    entity = self._id2subject[subject_id]
                     if mention in self._m2e_dic:
                         entity_list = self._m2e_dic[mention]
-                        entity_list.append(Candidate(entity))
+                        entity_list.append(Candidate(entity=entity, id=subject_id))
                     else:
                         entity_list = []
-                        entity_list.append(Candidate(entity))
+                        entity_list.append(Candidate(entity=entity, id=subject_id))
                         self._m2e_dic[mention] = entity_list
 
     def add_filters(self):

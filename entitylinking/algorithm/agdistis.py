@@ -10,7 +10,7 @@ from ..candidate.candidate import Candidate
 from ..graph.neighbor_builder import insert_neighbors
 from ..graph.hits import hits_analyze
 from ..graph.pagerank import pagerank_analyze
-from ..index_elasticsearch.triple_index import TripleIndex
+from ..index_elasticsearch.triple_index_with_id import TripleIndex
 import entitylinking.jieba as jieba
 
 
@@ -25,7 +25,7 @@ class Agdistis:
         self._algorithm = AppConfig.instance().algorithm
         TripleIndex.init_instance(AppConfig.instance().es_endpoints)
         self._triple_index = TripleIndex.instance()
-        jieba.load_userdict(AppConfig.instance().user_dic)
+        #jieba.load_userdict(AppConfig.instance().user_dic)
 
         # 缓存
         self._cache = Cache(maxsize=10*1024, ttl=10*60)
@@ -43,9 +43,6 @@ class Agdistis:
         if cache_doc:
             return cache_doc
 
-        # 创建有向图
-        graph = nx.DiGraph()
-
         # 按照mention的长度从大到小排序
         doc.mention_list = sorted(doc.mention_list,
                                   key=lambda iterm: iterm.length, reverse=True)
@@ -57,6 +54,9 @@ class Agdistis:
             doc.sort_candidates()
             return doc
 
+        # 创建有向图
+        graph = nx.DiGraph()
+        
         # 根据mentions添加候选实体到graph中
         self.add_candidates2graph(graph, doc)
 
@@ -66,7 +66,7 @@ class Agdistis:
 
         #options = {'node_color': 'black', 'node_size': 20, 'width': 1}
         #nx.draw_random(graph, **options)
-        #plt.savefig('test.png')
+        # plt.savefig('test.png')
         # plt.show()
 
         # 使用链接算法更新节点权重
@@ -89,13 +89,13 @@ class Agdistis:
         for mention in doc.mention_list:
             candidates = mention.candidates
             for candidate in candidates:
-                if candidate.entity in node_map:
-                    node = node_map[candidate.entity]
+                if candidate.id in node_map:
+                    node = node_map[candidate.id]
                     # 这里ids存放的是mention本身
                     node.ids.add(mention)
                 else:
-                    node = Node(
-                        candidate.entity, 0, algorithm, base_score=candidate.score)
+                    node = Node(candidate.id, candidate.entity,
+                                0, algorithm, base_score=candidate.score)
                     node.ids.add(mention)
                     node_map[candidate.entity] = node
 
@@ -127,5 +127,9 @@ class Agdistis:
         Returns:
             Candidate -- 候选项
         """
-        candidate = Candidate(node.value, node.score + node.base_score)
+        if len(node.ids) > 1:
+            score = node.base_score
+        else:
+            score = node.score + node.base_score
+        candidate = Candidate(entity=node.value, id=node.id, score=score)
         return candidate

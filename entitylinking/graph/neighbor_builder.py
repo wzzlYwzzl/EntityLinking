@@ -6,6 +6,7 @@ from ..graph.node import Node
 
 sys.setrecursionlimit(100000)
 
+
 def insert_neighbors(graph, triple_index, max_depth, algorithm):
     """将graph中的node，按照其在图谱中的SPO关系，扩充其上下文。
     扩充的链接深度最大不能超过max_depth
@@ -27,7 +28,8 @@ def insert_neighbors(graph, triple_index, max_depth, algorithm):
             for triple in neighbor_triples:
                 if triple.object:
                     new_level = level + 1
-                    new_node = Node(triple.object, new_level, algorithm, hits_score=0)
+                    new_node = Node(triple.object_id, triple.object,
+                                    new_level, algorithm, hits_score=0)
                     node_queue.put(new_node)
                     graph.add_edge(node, new_node, predicate=triple.predicate)
 
@@ -36,6 +38,6 @@ def get_direct_neighbors(triple_index, node, max_depth):
     """获取以node为SPO中的S的所有三元组，由于现在三元组存储在lucene中，所以
     获取neighbors三元组的方法就是index查询。
     """
-    subject = node.value
-    triples = triple_index.search(subject=subject, mode='and')
+    subject_id = node.id
+    triples = triple_index.search(subject_id=subject_id, mode='and')
     return triples
