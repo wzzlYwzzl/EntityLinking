@@ -3,6 +3,7 @@ data/cn-pedia/*
 data/index*
 data/baidu/*
 data/text_dir/*
+log/*
 
 #############
 ## Python
