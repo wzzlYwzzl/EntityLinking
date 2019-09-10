@@ -66,6 +66,8 @@ class Tokenizer(object):
         else:
             self.dictionary = _get_abs_path(dictionary)
         self.FREQ = {}
+        # 停止词
+        self.STOPWORDS = set()
         self.total = 0
         self.user_word_tag_tab = {}
         self.initialized = False
@@ -528,6 +530,22 @@ class Tokenizer(object):
             self.dictionary = abs_path
             self.initialized = False
 
+    def load_stopwords(self, stopwords_file):
+        """加载停止词词表，格式就是每行一个词
+        """
+        with open(stopwords_file, mode='r', encoding='utf-8') as f:
+            for line in f:
+                self.STOPWORDS.add(line.strip('\n'))
+
+    def cut_with_stopwords(self, sentence, cut_all=False, HMM=True):
+        """分词，如果词在stopwords中，就不返回
+        """
+        words = self.cut(sentence, cut_all, HMM)
+        for word in words:
+            word_strip = word.strip()
+            if word_strip and word_strip not in self.STOPWORDS:
+                yield word
+
 
 # default Tokenizer instance
 
@@ -554,6 +572,8 @@ set_dictionary = dt.set_dictionary
 suggest_freq = dt.suggest_freq
 tokenize = dt.tokenize
 user_word_tag_tab = dt.user_word_tag_tab
+load_stopwords = dt.load_stopwords
+cut_with_stopwords = dt.cut_with_stopwords
 
 
 def _lcut_all(s):

@@ -1,20 +1,20 @@
+# encoding=utf-8
 """采用多进程的方式，将要构建索引的文件切分为多个，每个文件用独立的进程来处理
 速度非常快。这里创建的索引是带有id的。
 """
 
-# encoding=utf-8
-import sys
-import os
-import json
-import logging
-import timeit
-import multiprocessing
-from multiprocessing import Pool, cpu_count
-
-from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
+from elasticsearch import Elasticsearch
+from multiprocessing import Pool, cpu_count
+import multiprocessing
+import timeit
+import logging
+import json
+import os
+import sys
 
-from ..utils.file_utils import get_files
+sys.path.append('/Users/caoxiaojie/pythonCode/EntityLinking')
+from entitylinking.utils.file_utils import get_files
 
 log_console = logging.StreamHandler(sys.stderr)
 default_logger = logging.getLogger(__name__)
@@ -141,6 +141,7 @@ def get_es_client():
 def write_doc_multi_process(indexname, json_dir):
     """多进程模式写入数据，按照文件创建进程
     """
+
     pool = Pool(processes=process_count)
     files = get_files(json_dir)
     for file in files:
@@ -182,24 +183,19 @@ def get_actions_iterator(indexname, json_file):
     with open(json_file, mode='r', encoding='utf-8') as f_json:
         for line in f_json:
             obj = json.loads(line)
-            subject_id = obj.subject_id
-            subject = obj.subject
-            spo_list = obj.data
+            subject_id = int(obj['subject_id'])
+            subject = obj['subject']
+            spo_list = obj['data']
             for spo in spo_list:
                 action = _build_action(
-                    indexname, subject_id, subject, spo.predicate, spo.object)
+                    indexname, subject_id, subject, spo['predicate'], spo['object'])
                 yield action
 
 
 def _build_action(indexname, subject_id, subject, predicate, object):
     """创建一个bulk使用的action
     """
-    subject_id = id_dict[subject]
-
-    if object in id_dict:
-        object_id = id_dict[object]
-    else:
-        object_id = 0
+    object_id = 0
 
     action = {
         '_index': indexname,
@@ -216,14 +212,49 @@ def _build_action(indexname, subject_id, subject, predicate, object):
     return action
 
 
-def handle_json_data(json_data, mention_file):
+def create_m2e(json_data, mention_file, id_file):
     """处理百度提供的json格式的数据，将其处理为SPO的形式
     """
+    m2id = {}
     with open(json_data, mode='r', encoding='utf-8') as f_json:
-        with open(mention_file, mode='w+', encoding='utf-8') as f_mention:
+        with open(id_file, mode='w+', encoding='utf-8') as f_id:
             for line in f_json:
-                data = json.loads(line)
+                obj = json.loads(line)
+                subject_id = obj['subject_id']
+                subject = obj['subject']
+                f_id.write('{}{}\t{}\n'.format(subject,subject_id, subject_id))
+
+                if subject in m2id:
+                    id_list = m2id[subject]
+                    id_list.append(subject_id)
+                else:
+                    id_list = [subject_id]
+                    m2id[subject] = id_list
+    with open(mention_file, mode='w+', encoding='utf-8') as f_mention:
+        for key, value in m2id.items():
+            for sub_id in value:
+                f_mention.write('{}\t{}\n'.format(key, sub_id))
+
+
+def create_dict(m2e_file, dict_file):
+    """mention识别词典
+    """
+    word_set = set()
+    with open(m2e_file, mode='r', encoding='utf-8') as f:
+        with open(dict_file, mode='w+', encoding='utf-8') as f_dict:
+            for line in f:
+                fields = line.split('\t')
+                word = fields[0].strip()
+                if word not in word_set:
+                    f_dict.write('{}\t10\n'.format(word))
+                    word_set.add(word)
+
 
 if __name__ == '__main__':
     json_dir = '/Users/caoxiaojie/pythonCode/EntityLinking/data/baidu/kb_data'
-    triple_index_create(json_dir=json_dir, overwrite=True)
+    m2e = '/Users/caoxiaojie/pythonCode/EntityLinking/data/baidu/m2e.txt'
+    id_file = '/Users/caoxiaojie/pythonCode/EntityLinking/data/baidu/id.txt'
+    dict_file = '/Users/caoxiaojie/pythonCode/EntityLinking/data/baidu/dict.txt'
+    #triple_index_create(json_dir=json_dir, overwrite=True)
+    #create_m2e(json_dir, m2e, id_file)
+    create_dict(m2e, dict_file)

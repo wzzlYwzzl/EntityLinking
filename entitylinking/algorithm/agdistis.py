@@ -28,6 +28,7 @@ class Agdistis:
         TripleIndex.init_instance(es_endpoint, indexname)
         self._triple_index = TripleIndex.instance()
         #jieba.load_userdict(AppConfig.instance().user_dic)
+        jieba.load_stopwords(AppConfig.instance().stopwords)
 
         # 缓存
         self._cache = Cache(maxsize=10*1024, ttl=10*60)

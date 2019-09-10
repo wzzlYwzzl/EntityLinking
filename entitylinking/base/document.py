@@ -97,9 +97,8 @@ class Document:
     def process_context(self, context):
         """对context做分词处理，除去一些没价值的stopwords
         """
-        words = jieba.cut(context)
-        out_words = [word for word in words if word not in stop_words]
-        return out_words
+        words = jieba.cut_with_stopwords(context)
+        return list(words)
 
     def sep_words(self, words_list):
         """将words_list划分为两份

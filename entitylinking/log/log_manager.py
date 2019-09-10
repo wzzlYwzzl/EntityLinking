@@ -23,10 +23,12 @@ class LogManager:
 
     def __init__(self):
         self._logger = logging.getLogger("entitylinking_logger")
-        self._logger.setLevel(logging.DEBUG)
+        self._log_level = self.get_log_level()
+        
+        self._logger.setLevel(self._log_level)
 
         self._stream_handler = logging.StreamHandler()
-        self._stream_handler.setLevel(logging.DEBUG)
+        self._stream_handler.setLevel(self._log_level)
         self._stream_handler.setFormatter(
             logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         )
@@ -34,7 +36,6 @@ class LogManager:
         self._logger.addHandler(self._stream_handler)
 
         self._log_file = AppConfig.instance().log_file
-        self._log_level = self.get_log_level()
         dir_tmp = os.path.dirname(self._log_file)
         if not os.path.exists(dir_tmp):
             os.makedirs(dir_tmp)

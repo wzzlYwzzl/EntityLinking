@@ -115,13 +115,15 @@ class TripleIndex:
         query_str = ""
 
         if subject:
-            query_str += "subject:({})".format(subject)
+            sub = self.handle_special_char(subject)
+            query_str += "subject:({})".format(sub)
 
         if object:
-            query_str += " AND search_field:({})".format(object, object)
+            obj = self.handle_special_char(object)
+            query_str += " AND search_field:({})".format(obj)
 
         if subject_ids:
-            tmp = ' OR '.join(['subject_id:'+ str(item) for item in subject_ids])
+            tmp = u' OR '.join(['subject_id:'+ str(item) for item in subject_ids])
             query_str += " AND ({})".format(tmp)
 
         query = {
@@ -132,7 +134,7 @@ class TripleIndex:
             }
         }
 
-        print("fiter:", query)
+        LogManager.instance().debug("fiter:{}".format(query))
         return query
 
     def search_triples(self, q, mode, max_result_count):
@@ -204,3 +206,12 @@ class TripleIndex:
         key += 'mode:{},count:{}'.format(mode, max_result_count)
 
         return key
+
+    def handle_special_char(self, query_str):
+        """将query_str中的特殊符号进行转义
+        特殊符号包括：+、-、&&、||、!、(、)、{}、^、"、/、~、*、?、:、
+        """
+        pattern = '\+|\-|\&\&|\!|\(|\)|\{|\}|\^|"|\\|\*|\?|\|\||:|~|\/'
+        new_query = re.sub(pattern, lambda x : "\\{}".format(x.group()), query_str)
+        return new_query
+        
